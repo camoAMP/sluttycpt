@@ -4,7 +4,7 @@ Static web UI (GitHub Pages) + your PC serves the actual video files (not stored
 
 ## What People Open (Recommended)
 
-- Your domain (example: `https://cptcommunityadults.fun/`)
+- Your domain (example: `https://videos.cptcommunityadults.fun/` or `https://cptcommunityadults.fun/`)
 - That domain is pointed at your running `server.js` via an HTTPS tunnel (Cloudflare Tunnel), so the UI auto-connects and users never need to type a "server URL".
 
 ## Alternate Setup (GitHub Pages UI)
@@ -34,7 +34,7 @@ The server prints local URLs. For remote viewers you need an HTTPS public URL (n
 
 ## Use Your Own Domain (Cloudflare Tunnel)
 
-If you want users to simply open `https://cptcommunityadults.fun/` with no server setup UI:
+If you want users to simply open your domain with no server setup UI:
 
 1. Put your domain on Cloudflare (DNS).
 2. Create a Cloudflare Tunnel that points to your local server `http://127.0.0.1:5173`.
