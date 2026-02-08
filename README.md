@@ -50,7 +50,12 @@ cloudflared tunnel login
 cloudflared tunnel create camodick
 
 # Route your domain to that tunnel
-cloudflared tunnel route dns camodick cptcommunityadults.fun
+# Use a subdomain to avoid replacing whatever is currently on the root domain.
+cloudflared tunnel route dns camodick videos.cptcommunityadults.fun
+
+# NOTE: If the command outputs a hostname like "...cptcommunityadults.fun.SOMETHING-ELSE",
+# you're logged into the wrong Cloudflare account/zone. Login again with the account that
+# actually manages `cptcommunityadults.fun` DNS.
 
 # Run the tunnel (it forwards HTTPS -> your local server)
 cloudflared tunnel run camodick
