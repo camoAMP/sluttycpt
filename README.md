@@ -71,6 +71,11 @@ cloudflared tunnel run camodick
 
 Once that’s active, users just open your domain and sign in.
 
+## Admin Login
+
+- Admin login URL: `/admin` (example: `https://videos.cptcommunityadults.fun/admin`)
+- Sign-up is on `/` (the first account created becomes admin)
+
 ## Accounts + Quotas
 
 - Users can **Sign Up / Sign In** in the UI.
