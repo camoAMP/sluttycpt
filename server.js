@@ -8,6 +8,7 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { spawn } = require("child_process");
+const nodemailer = require("nodemailer");
 
 const PORT = Number(process.env.PORT || 5173);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -22,6 +23,23 @@ const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(process.cwd(),
 const PREVIEW_SECONDS = Math.max(1, Math.min(60, Number(process.env.PREVIEW_SECONDS || 10)));
 const SIGNUP_ENABLED = process.env.SIGNUP_ENABLED === "0" ? false : true;
 const SESSION_DAYS = Math.max(1, Math.min(365, Number(process.env.SESSION_DAYS || 30)));
+
+// Magic link (passwordless email login)
+const MAGIC_LINK_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
+const MAGIC_LINK_RATE_LIMIT = 3; // per IP per window
+const MAGIC_LINK_RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const SMTP_HOST = String(process.env.SMTP_HOST || "").trim();
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_SECURE = process.env.SMTP_SECURE === "1" || process.env.SMTP_SECURE === "true";
+const SMTP_USER = String(process.env.SMTP_USER || "").trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || "").trim();
+const MAIL_FROM = String(process.env.MAIL_FROM || "noreply@localhost").trim();
+const MAGIC_LINK_ENABLED = !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
+const ALLOWED_RETURN_ORIGINS = (() => {
+  const raw = String(process.env.ALLOWED_RETURN_ORIGINS || "").trim();
+  if (!raw) return new Set();
+  return new Set(raw.split(",").map((s) => s.trim()).filter(Boolean));
+})();
 
 const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v"]);
 
@@ -55,6 +73,7 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
  *   users: Array<{
  *     id:string,
  *     username:string,
+ *     email?:string,
  *     role:"admin"|"user",
  *     salt:string,
  *     passHash:string,
@@ -120,6 +139,10 @@ function queueSaveSessions() {
     });
   return saveSessionsChain;
 }
+
+// Magic link: pending tokens (jti -> { email, exp }), one-time use; cleared on use or expiry
+const magicPending = new Map();
+const magicRateLimit = new Map(); // ip -> { count, firstAt }
 
 function json(res, status, obj) {
   const body = Buffer.from(JSON.stringify(obj, null, 2));
@@ -323,10 +346,135 @@ function scryptAsync(password, salt) {
 }
 
 async function verifyPassword(user, password) {
+  if (!user.salt || !user.passHash) return false;
   const derived = await scryptAsync(password, Buffer.from(user.salt, "hex"));
   const expected = Buffer.from(user.passHash, "hex");
   if (expected.length !== derived.length) return false;
   return crypto.timingSafeEqual(expected, derived);
+}
+
+function normalizeEmail(raw) {
+  const s = String(raw || "").trim().toLowerCase();
+  if (s.length < 3 || s.length > 254) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return null;
+  return s;
+}
+
+function createMagicToken(email) {
+  const jti = crypto.randomUUID();
+  const exp = Date.now() + MAGIC_LINK_EXPIRY_MS;
+  const payload = { email, exp, jti };
+  const payloadB64 = b64url(JSON.stringify(payload));
+  const sig = crypto.createHmac("sha256", AUTH_SECRET).update(payloadB64).digest();
+  magicPending.set(jti, { email, exp });
+  return { token: `${payloadB64}.${b64url(sig)}`, jti };
+}
+
+function verifyAndConsumeMagicToken(tokenStr) {
+  const t = String(tokenStr || "").trim();
+  const dot = t.indexOf(".");
+  if (dot < 0) return null;
+  const payloadB64 = t.slice(0, dot);
+  const sigB64 = t.slice(dot + 1);
+  let payload;
+  try {
+    payload = JSON.parse(b64urlToBuf(payloadB64).toString("utf8"));
+  } catch {
+    return null;
+  }
+  if (!payload || typeof payload.email !== "string" || typeof payload.exp !== "number" || typeof payload.jti !== "string") return null;
+  if (Date.now() > payload.exp) return null;
+  const expected = crypto.createHmac("sha256", AUTH_SECRET).update(payloadB64).digest();
+  let got;
+  try {
+    got = b64urlToBuf(sigB64);
+  } catch {
+    return null;
+  }
+  if (got.length !== expected.length) return null;
+  if (!crypto.timingSafeEqual(got, expected)) return null;
+  const pending = magicPending.get(payload.jti);
+  if (!pending || pending.email !== payload.email) return null;
+  magicPending.delete(payload.jti);
+  return { email: payload.email };
+}
+
+function checkMagicLinkRateLimit(ip) {
+  const now = Date.now();
+  let entry = magicRateLimit.get(ip);
+  if (!entry) {
+    magicRateLimit.set(ip, { count: 1, firstAt: now });
+    return true;
+  }
+  if (now - entry.firstAt > MAGIC_LINK_RATE_WINDOW_MS) {
+    magicRateLimit.set(ip, { count: 1, firstAt: now });
+    return true;
+  }
+  if (entry.count >= MAGIC_LINK_RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
+function validateReturnTo(returnTo, requestOrigin) {
+  if (!returnTo || typeof returnTo !== "string") return null;
+  const s = returnTo.trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    const req = new URL(requestOrigin);
+    if (u.origin === req.origin) return s;
+    if (ALLOWED_RETURN_ORIGINS.size && ALLOWED_RETURN_ORIGINS.has(u.origin)) return s;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function sendMagicLinkEmail(to, magicLink) {
+  const transport = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: SMTP_USER ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+  });
+  await transport.sendMail({
+    from: MAIL_FROM,
+    to,
+    subject: "Sign in to Camfordick",
+    text: `Click the link below to sign in. This link expires in 15 minutes.\n\n${magicLink}\n\nIf you didn't request this, you can ignore this email.`,
+  });
+}
+
+async function findOrCreateUserByEmail(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+  let user = usersDb.users.find((u) => u.email && u.email.toLowerCase() === normalized);
+  if (user) return user;
+  const role = usersDb.users.length === 0 ? "admin" : "user";
+  const usernameFromEmail = normalized.replace(/@.*/, "").replace(/[^a-zA-Z0-9_.-]/g, "_").slice(0, 32) || "user";
+  let username = usernameFromEmail;
+  let suffix = 0;
+  while (usersDb.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+    suffix++;
+    username = `${usernameFromEmail.slice(0, 28)}_${suffix}`;
+  }
+  user = {
+    id: crypto.randomUUID(),
+    username,
+    email: normalized,
+    role,
+    salt: "",
+    passHash: "",
+    quota: role === "admin" ? -1 : 0,
+    unlocked: [],
+    contentTokens: [],
+    disabled: false,
+    accessUntilMs: null,
+    createdAt: new Date().toISOString(),
+  };
+  usersDb.users.push(user);
+  await queueSaveUsers();
+  return user;
 }
 
 async function readJson(req, limitBytes = 1_000_000) {
@@ -686,7 +834,10 @@ const server = http.createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Headers", "Range,Content-Type,Authorization");
     if (req.method === "OPTIONS") return res.end();
 
-    if (pathname === "/" || pathname === "/index.html") return serveIndex(req, res);
+    // Serve the single-page UI on known routes.
+    if (pathname === "/" || pathname === "/index.html" || pathname === "/admin" || pathname.startsWith("/admin/")) {
+      return serveIndex(req, res);
+    }
 
     if (pathname === "/api/info") {
       return json(res, 200, {
@@ -699,6 +850,7 @@ const server = http.createServer(async (req, res) => {
           legacyToken: LEGACY_TOKEN ? true : false,
           users: true,
           signupEnabled: SIGNUP_ENABLED,
+          magicLinkEnabled: MAGIC_LINK_ENABLED,
           previewSeconds: PREVIEW_SECONDS,
         },
         now: new Date().toISOString(),
@@ -760,6 +912,60 @@ const server = http.createServer(async (req, res) => {
       await queueSaveSessions();
       const auth = makeAuthToken(user, session.id);
       return json(res, 200, { ok: true, user: { username: user.username, role: user.role, quota: user.quota }, auth });
+    }
+
+    if (pathname === "/api/auth/magic-link" && req.method === "POST") {
+      if (!MAGIC_LINK_ENABLED) return json(res, 503, { ok: false, error: "magic_link_not_configured" });
+      const body = await readJson(req).catch(() => null);
+      const email = normalizeEmail(body && body.email);
+      if (!email) return json(res, 400, { ok: false, error: "bad_request" });
+      const ip = getClientIp(req);
+      if (!checkMagicLinkRateLimit(ip)) return json(res, 429, { ok: false, error: "too_many_requests" });
+      const { token } = createMagicToken(email);
+      const proto = String(req.headers["x-forwarded-proto"] || "http").split(",")[0].trim();
+      const host = req.headers.host || "localhost";
+      const origin = `${proto}://${host}`;
+      const returnTo = validateReturnTo(body && body.return_to, origin) || `${origin}/`;
+      const magicLink = `${origin}/api/auth/magic?token=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnTo)}`;
+      try {
+        await sendMagicLinkEmail(email, magicLink);
+      } catch (err) {
+        console.error("Magic link email failed:", err);
+        return json(res, 500, { ok: false, error: "email_failed" });
+      }
+      return json(res, 200, { ok: true });
+    }
+
+    if (pathname === "/api/auth/magic" && req.method === "GET") {
+      const tokenStr = url.searchParams.get("token");
+      const returnToParam = url.searchParams.get("return_to");
+      const proto = String(req.headers["x-forwarded-proto"] || "http").split(",")[0].trim();
+      const host = req.headers.host || "localhost";
+      const origin = `${proto}://${host}`;
+      const safeReturnTo = validateReturnTo(returnToParam, origin) || `${origin}/`;
+      const result = verifyAndConsumeMagicToken(tokenStr);
+      if (!result) {
+        res.writeHead(302, { Location: `${safeReturnTo}#error=invalid_or_expired_link` });
+        return res.end();
+      }
+      const user = await findOrCreateUserByEmail(result.email);
+      if (!user) {
+        res.writeHead(302, { Location: `${safeReturnTo}#error=invalid_email` });
+        return res.end();
+      }
+      if (user.disabled) {
+        res.writeHead(302, { Location: `${safeReturnTo}#error=account_disabled` });
+        return res.end();
+      }
+      if (typeof user.accessUntilMs === "number" && Date.now() > user.accessUntilMs) {
+        res.writeHead(302, { Location: `${safeReturnTo}#error=access_expired` });
+        return res.end();
+      }
+      const session = createSessionForUser(user, { deviceId: undefined, deviceName: "magic-link", req });
+      await queueSaveSessions();
+      const auth = makeAuthToken(user, session.id);
+      res.writeHead(302, { Location: `${safeReturnTo}#auth=${encodeURIComponent(auth)}` });
+      return res.end();
     }
 
     if (pathname === "/api/me") {

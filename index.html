@@ -567,6 +567,7 @@
       const state = {
         mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
         view: /** @type {"landing" | "gallery"} */ ("landing"),
+        adminRoute: false,
         ageOk: false,
         cornerOpen: false,
         serverInfo: null, // from /api/info
@@ -837,6 +838,7 @@
         const me = state.me;
         const role = me ? String(me.role || "") : "";
         const isAdmin = role === "admin";
+        const adminRoute = !!state.adminRoute;
 
         // Always show the corner button so admins can find it on the landing page.
         // If the current user isn't admin, clicking it will show a hint instead of opening panels.
@@ -852,8 +854,9 @@
 
         if (!usingServer) {
           el.authPill.textContent = state.mode === "local" ? "Local mode" : "Not connected";
+          el.signInBtn.textContent = adminRoute ? "Admin Login" : "Sign In";
           el.signInBtn.classList.remove("hidden");
-          el.signUpBtn.classList.toggle("hidden", !signupEnabled);
+          el.signUpBtn.classList.toggle("hidden", !signupEnabled || adminRoute);
           el.signOutBtn.classList.add("hidden");
           el.creditsPill.classList.add("hidden");
           el.adminPanel.classList.add("hidden");
@@ -865,8 +868,9 @@
 
         if (!me) {
           el.authPill.textContent = "Signed out";
+          el.signInBtn.textContent = adminRoute ? "Admin Login" : "Sign In";
           el.signInBtn.classList.remove("hidden");
-          el.signUpBtn.classList.toggle("hidden", !signupEnabled);
+          el.signUpBtn.classList.toggle("hidden", !signupEnabled || adminRoute);
           el.signOutBtn.classList.add("hidden");
           el.creditsPill.classList.add("hidden");
           el.adminPanel.classList.add("hidden");
@@ -1605,6 +1609,7 @@
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const j = await r.json();
           if (!j || !j.ok || !j.user) throw new Error("Bad server response");
+          if (state.adminRoute && String(j.user.role || "") === "admin") state.cornerOpen = true;
           state.me = {
             username: String(j.user.username || ""),
             role: String(j.user.role || ""),
@@ -2239,6 +2244,35 @@
 
       // Initial setup
       (async () => {
+        // Magic link redirect: apply token from hash and clear hash
+        const hash = window.location.hash.slice(1);
+        if (hash) {
+          const authMatch = /^auth=([^&]+)/.exec(hash);
+          const errorMatch = /error=([^&]*)/.exec(hash);
+          if (authMatch) {
+            const token = decodeURIComponent(authMatch[1]);
+            const base = window.location.origin;
+            state.authToken = token;
+            persistAuthTokenForBase(base, token);
+          }
+          if (errorMatch) {
+            const err = decodeURIComponent(errorMatch[1]);
+            setError(err === "invalid_or_expired_link" ? "Link expired or already used." : err === "account_disabled" ? "Account disabled." : err === "access_expired" ? "Access expired." : err);
+          }
+          try {
+            window.history.replaceState(null, "", window.location.pathname + window.location.search);
+          } catch {
+            // Ignore.
+          }
+        }
+
+        try {
+          const p = String(window.location.pathname || "");
+          state.adminRoute = p === "/admin" || p.startsWith("/admin/");
+        } catch {
+          state.adminRoute = false;
+        }
+
         state.ageOk = readAgeOk();
         setAgeGateUi();
         setSupportPill();
