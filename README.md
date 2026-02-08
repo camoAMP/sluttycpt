@@ -15,13 +15,24 @@ Videos live in `./videos` by default.
 cd camodick
 mkdir -p videos
 
-# Optional but recommended: require a token for /api/videos and /media/*
+# Optional: legacy admin token (full access via ?token=...).
+# Keep this private if you want per-user quotas to matter.
 export TOKEN="change-me-to-a-long-random-string"
+
+# Optional: disable public sign-ups after you create accounts
+# export SIGNUP_ENABLED=0
 
 node server.js
 ```
 
 The server prints local URLs. For remote viewers you need an HTTPS public URL (next section).
+
+## Accounts + Quotas
+
+- Users can **Sign Up / Sign In** in the UI.
+- The **first** account created becomes **admin**.
+- Admin can set a **quota (videos)** for each user.
+- Locked videos show **thumbnails** and a **10s preview**; users must **unlock** to watch/download full.
 
 ## Make It Reachable From The Internet (HTTPS)
 
@@ -50,6 +61,6 @@ It prints an `https://xxxx.trycloudflare.com` URL. Use that in the UI as the “
 Open your GitHub Pages UI, paste:
 
 - PC Server URL: `https://xxxx.trycloudflare.com`
-- Token: your `TOKEN` (if set)
+- Legacy Token: leave blank (recommended), unless you want legacy full-access links
 
 Click **Connect Server**, then **Copy Link** and share that URL to others.
