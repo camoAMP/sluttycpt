@@ -88,7 +88,9 @@ else
 fi
 
 cleanup() {
-  echo "[camodick] stopping..."
+  if [[ "${STARTED_SERVER}" == "1" || "${STARTED_TUNNEL}" == "1" ]]; then
+    echo "[camodick] stopping..."
+  fi
   if [[ "${STARTED_SERVER}" == "1" && -n "${SERVER_PID}" ]]; then
     kill "${SERVER_PID}" 2>/dev/null || true
   fi
