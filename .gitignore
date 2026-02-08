@@ -14,3 +14,10 @@ node_modules/
 # Local videos for Camfordick (avoid committing large media files)
 videos/**
 !videos/.gitkeep
+
+# Server runtime data (users, auth secret, thumbnails, previews)
+.camfordick-data/
+.camfordick-cache/
+
+# Local helper binaries
+cloudflared

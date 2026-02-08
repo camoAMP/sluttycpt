@@ -176,11 +176,11 @@
 	          </div>
 
 	          <div class="w-[180px]">
-	            <label for="serverTokenInput" class="block text-[11px] text-zinc-400">Token (optional)</label>
+	            <label for="serverTokenInput" class="block text-[11px] text-zinc-400">Legacy Token (optional)</label>
 	            <input
 	              id="serverTokenInput"
 	              class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-	              placeholder="shared secret"
+	              placeholder="token"
 	              autocomplete="off"
 	            />
 	          </div>
@@ -198,7 +198,7 @@
 	            id="copyLinkBtn"
 	            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
 	            type="button"
-	            title="Copy a share link with ?server=…&token=… (token will be included if present)"
+	            title="Copy a share link with ?server=…"
 	          >
 	            Copy Link
 	          </button>
@@ -212,6 +212,111 @@
 	            Use Local
 	          </button>
 	        </div>
+
+          <div id="authRow" class="mt-3 flex flex-wrap items-end gap-2">
+            <div class="min-w-[160px]">
+              <label for="authUserInput" class="block text-[11px] text-zinc-400">Username</label>
+              <input
+                id="authUserInput"
+                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+                placeholder="yourname"
+                autocomplete="username"
+              />
+            </div>
+
+            <div class="min-w-[200px] flex-1">
+              <label for="authPassInput" class="block text-[11px] text-zinc-400">Password</label>
+              <input
+                id="authPassInput"
+                type="password"
+                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+            </div>
+
+            <button
+              id="signInBtn"
+              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+              type="button"
+              title="Sign in to your account on the connected PC server"
+            >
+              Sign In
+            </button>
+
+            <button
+              id="signUpBtn"
+              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+              type="button"
+              title="Create a new account on the connected PC server"
+            >
+              Sign Up
+            </button>
+
+            <button
+              id="signOutBtn"
+              class="hidden neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+              type="button"
+              title="Sign out"
+            >
+              Sign Out
+            </button>
+
+            <div class="ml-auto flex flex-wrap items-center gap-2 text-xs">
+              <span
+                id="authPill"
+                class="rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-zinc-200/90"
+                >Signed out</span
+              >
+              <span
+                id="creditsPill"
+                class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-zinc-200/90"
+                >Unlocked: <span id="creditsText" class="text-zinc-100">0/0</span></span
+              >
+            </div>
+          </div>
+
+          <div
+            id="adminPanel"
+            class="mt-3 hidden rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-zinc-200/90"
+          >
+            <div class="mb-2 font-display text-sm font-semibold tracking-wide text-white/90">Admin: Set Quota</div>
+            <div class="flex flex-wrap items-end gap-2">
+              <div class="min-w-[180px] flex-1">
+                <label for="adminUserSelect" class="block text-[11px] text-zinc-400">User</label>
+                <select
+                  id="adminUserSelect"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
+                ></select>
+              </div>
+              <div class="w-[160px]">
+                <label for="adminQuotaInput" class="block text-[11px] text-zinc-400">Quota (videos)</label>
+                <input
+                  id="adminQuotaInput"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
+                  placeholder="0"
+                />
+              </div>
+              <button
+                id="adminSetQuotaBtn"
+                class="neon-btn rounded-xl bg-gradient-to-r from-neonP/70 to-neonT/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+                type="button"
+              >
+                Set Quota
+              </button>
+              <button
+                id="adminRefreshUsersBtn"
+                class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+                type="button"
+              >
+                Refresh Users
+              </button>
+              <div id="adminMsg" class="min-w-[240px] flex-1 font-mono text-[11px] text-zinc-300/90"></div>
+            </div>
+          </div>
 
 	        <div class="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
 	          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
@@ -269,11 +374,39 @@
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-              <div class="truncate text-zinc-300">
+              <div class="min-w-[220px] flex-1 truncate text-zinc-300">
                 Now Playing:
                 <span id="nowPlaying" class="font-mono text-zinc-100">Nothing loaded</span>
               </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  id="playerPreviewBtn"
+                  class="neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform"
+                  type="button"
+                  title="Play a short preview (does not unlock)"
+                >
+                  Preview 10s
+                </button>
+                <button
+                  id="playerUnlockBtn"
+                  class="hidden neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-3 py-2 font-display text-xs font-semibold tracking-wide text-white transition will-change-transform"
+                  type="button"
+                  title="Unlock this video (uses 1 quota)"
+                >
+                  Unlock
+                </button>
+                <a
+                  id="playerDownloadBtn"
+                  class="hidden neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform"
+                  href="#"
+                  title="Download (requires unlock)"
+                  >Download</a
+                >
+              </div>
+            </div>
+            <div class="px-4 pb-3">
               <div id="errorText" class="font-mono text-xs text-rose-400"></div>
+              <div id="playerHint" class="mt-1 font-mono text-[11px] text-zinc-400"></div>
             </div>
           </div>
         </section>
@@ -312,12 +445,12 @@
     <script>
       "use strict";
 
-      const VIDEO_EXTS = new Set(["mp4", "webm", "mkv", "avi"]);
-      const THUMB_PREVIEW_EXTS = new Set(["mp4", "webm"]);
+      const VIDEO_EXTS = new Set(["mp4", "webm", "mkv", "avi", "mov", "m4v"]);
+      const THUMB_PREVIEW_EXTS = new Set(["mp4", "webm", "mov", "m4v"]);
 
       /**
        * @typedef {{source:"local",path:string,name:string,ext:string,handle:FileSystemFileHandle}} LocalVideoEntry
-       * @typedef {{source:"server",path:string,name:string,ext:string,size?:number,mtimeMs?:number}} ServerVideoEntry
+       * @typedef {{source:"server",path:string,name:string,ext:string,size?:number,mtimeMs?:number,unlocked?:boolean}} ServerVideoEntry
        * @typedef {LocalVideoEntry | ServerVideoEntry} VideoEntry
        */
 
@@ -326,17 +459,21 @@
         serverInfo: null, // from /api/info
         serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
         serverToken: "",
+        authToken: "",
+        me: null, // from /api/me or /api/videos summary
         dirHandle: null,
         videos: /** @type {VideoEntry[]} */ ([]),
         byPath: /** @type {Map<string, VideoEntry>} */ (new Map()),
         urlCache: new Map(), // local: path -> objectURL
         streamOn: true,
         currentPath: null,
+        currentIsPreview: false,
         scanInProgress: false,
         scanSeq: 0,
         autoRescanMs: 15_000,
         toastTimer: null,
         thumbObserver: null,
+        adminUsers: [],
       };
 
       const el = {
@@ -351,11 +488,29 @@
         connectServerBtn: document.getElementById("connectServerBtn"),
         copyLinkBtn: document.getElementById("copyLinkBtn"),
         disconnectServerBtn: document.getElementById("disconnectServerBtn"),
+        authUserInput: document.getElementById("authUserInput"),
+        authPassInput: document.getElementById("authPassInput"),
+        signInBtn: document.getElementById("signInBtn"),
+        signUpBtn: document.getElementById("signUpBtn"),
+        signOutBtn: document.getElementById("signOutBtn"),
+        authPill: document.getElementById("authPill"),
+        creditsPill: document.getElementById("creditsPill"),
+        creditsText: document.getElementById("creditsText"),
+        adminPanel: document.getElementById("adminPanel"),
+        adminUserSelect: document.getElementById("adminUserSelect"),
+        adminQuotaInput: document.getElementById("adminQuotaInput"),
+        adminSetQuotaBtn: document.getElementById("adminSetQuotaBtn"),
+        adminRefreshUsersBtn: document.getElementById("adminRefreshUsersBtn"),
+        adminMsg: document.getElementById("adminMsg"),
         folderName: document.getElementById("folderName"),
         statusText: document.getElementById("statusText"),
         videoCount: document.getElementById("videoCount"),
         playerShell: document.getElementById("playerShell"),
         player: document.getElementById("player"),
+        playerPreviewBtn: document.getElementById("playerPreviewBtn"),
+        playerUnlockBtn: document.getElementById("playerUnlockBtn"),
+        playerDownloadBtn: document.getElementById("playerDownloadBtn"),
+        playerHint: document.getElementById("playerHint"),
         streamOffOverlay: document.getElementById("streamOffOverlay"),
         overlayStreamOnBtn: document.getElementById("overlayStreamOnBtn"),
         nowPlaying: document.getElementById("nowPlaying"),
@@ -451,6 +606,98 @@
         el.streamOffOverlay.classList.toggle("hidden", state.streamOn);
       }
 
+      function setAdminMsg(msg) {
+        el.adminMsg.textContent = msg || "";
+      }
+
+      function setAuthUi() {
+        const usingServer = state.mode === "server";
+        const me = state.me;
+
+        if (!usingServer) {
+          el.authPill.textContent = "Local mode";
+          el.signInBtn.classList.remove("hidden");
+          el.signUpBtn.classList.remove("hidden");
+          el.signOutBtn.classList.add("hidden");
+          el.creditsPill.classList.add("hidden");
+          el.adminPanel.classList.add("hidden");
+          setAdminMsg("");
+          return;
+        }
+
+        if (!me) {
+          el.authPill.textContent = "Signed out";
+          el.signInBtn.classList.remove("hidden");
+          el.signUpBtn.classList.remove("hidden");
+          el.signOutBtn.classList.add("hidden");
+          el.creditsPill.classList.add("hidden");
+          el.adminPanel.classList.add("hidden");
+          setAdminMsg("");
+          return;
+        }
+
+        const role = String(me.role || "user");
+        const who = me.username ? me.username : role === "admin" ? "admin" : "user";
+        el.authPill.textContent = role === "admin" ? `Signed in: ${who} (admin)` : `Signed in: ${who}`;
+        el.signInBtn.classList.add("hidden");
+        el.signUpBtn.classList.add("hidden");
+        el.signOutBtn.classList.remove("hidden");
+
+        el.creditsPill.classList.remove("hidden");
+        if (role === "admin" || me.quota === -1) {
+          el.creditsText.textContent = "unlimited";
+        } else {
+          const q = typeof me.quota === "number" ? me.quota : 0;
+          const u = typeof me.unlockedCount === "number" ? me.unlockedCount : 0;
+          el.creditsText.textContent = `${u}/${q}`;
+        }
+
+        el.adminPanel.classList.toggle("hidden", role !== "admin");
+      }
+
+      function setPlayerActions(entry) {
+        const hasEntry = !!entry;
+        el.playerPreviewBtn.disabled = !hasEntry;
+        el.playerPreviewBtn.classList.toggle("opacity-50", !hasEntry);
+        el.playerPreviewBtn.classList.toggle("cursor-not-allowed", !hasEntry);
+
+        el.playerHint.textContent = "";
+        el.playerUnlockBtn.classList.add("hidden");
+        el.playerDownloadBtn.classList.add("hidden");
+        el.playerDownloadBtn.href = "#";
+
+        if (!hasEntry) return;
+        if (entry.source !== "server") return;
+
+        const isAdmin = state.me && String(state.me.role) === "admin";
+        const unlocked = !!entry.unlocked || isAdmin;
+        const previewSeconds =
+          state.serverInfo && state.serverInfo.auth && typeof state.serverInfo.auth.previewSeconds === "number"
+            ? state.serverInfo.auth.previewSeconds
+            : 10;
+
+        if (unlocked) {
+          el.playerHint.textContent = isAdmin ? "Admin access: full watch/download." : "Unlocked: full watch/download.";
+          el.playerDownloadBtn.classList.remove("hidden");
+          el.playerDownloadBtn.href = serverDownloadUrl(entry.path);
+          return;
+        }
+
+        const q = state.me && typeof state.me.quota === "number" ? state.me.quota : 0;
+        const u = state.me && typeof state.me.unlockedCount === "number" ? state.me.unlockedCount : 0;
+
+        if (!state.me) {
+          el.playerHint.textContent = `Preview only (${previewSeconds}s). Sign in to unlock.`;
+          return;
+        }
+
+        const canUnlock = q === -1 || u < q;
+        el.playerUnlockBtn.classList.toggle("hidden", !canUnlock);
+        el.playerHint.textContent = canUnlock
+          ? `Preview only (${previewSeconds}s). Unlock uses 1 quota (${u}/${q}).`
+          : `Preview only (${previewSeconds}s). No quota remaining (${u}/${q}).`;
+      }
+
       function resetLibraryState() {
         // Clear any cached object URLs so switching folders can't accidentally reuse old URLs.
         for (const url of state.urlCache.values()) {
@@ -465,8 +712,10 @@
         state.videos = [];
         state.byPath = new Map();
         state.currentPath = null;
+        state.currentIsPreview = false;
         el.videoCount.textContent = "0";
         el.nowPlaying.textContent = "Nothing loaded";
+        setPlayerActions(null);
 
         try {
           el.player.pause();
@@ -547,6 +796,7 @@
             state.serverInfo = null;
             setSupportPill();
             setServerFormUi();
+            setAuthUi();
             setStatus("Saved folder found, permission needed");
             setFolderName((saved && saved.name) || "Saved folder");
             el.emptyHint.textContent = "Click Select Video Folder to re-grant permission.";
@@ -558,6 +808,7 @@
           state.dirHandle = saved;
           setSupportPill();
           setServerFormUi();
+          setAuthUi();
           setFolderName(saved.name || "Selected folder");
           setStatus("Folder access restored");
         } catch (err) {
@@ -593,6 +844,7 @@
           state.dirHandle = handle;
           setSupportPill();
           setServerFormUi();
+          setAuthUi();
           setFolderName(handle.name || "Selected folder");
           setStatus("Folder selected");
 
@@ -643,9 +895,12 @@
         state.serverInfo = info;
         state.serverBase = base;
         state.serverToken = token;
+        state.me = null;
+        restoreAuthTokenForBase(base);
         state.dirHandle = null;
         setSupportPill();
         setServerFormUi();
+        setAuthUi();
 
         let host = base;
         try {
@@ -666,7 +921,14 @@
         }
 
         renderLibrary();
-        await refreshLibrary({ reason: "startup", toastOnChange: false });
+        const authed = await refreshMe();
+        if (authed || state.serverToken) {
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+        } else {
+          setStatus("Sign in required");
+          el.emptyHint.textContent = "Connect succeeded, but sign-in is required to load the library.";
+          el.emptyState.classList.remove("hidden");
+        }
         return true;
       }
 
@@ -675,8 +937,11 @@
         state.serverInfo = null;
         state.serverBase = "";
         state.serverToken = "";
+        state.authToken = "";
+        state.me = null;
         setSupportPill();
         setServerFormUi();
+        setAuthUi();
         setFolderName("None");
         setStatus("Idle");
         setError("");
@@ -696,11 +961,10 @@
           return;
         }
 
-        const token = String(el.serverTokenInput.value || state.serverToken || "").trim();
         const u = new URL(window.location.href);
         u.searchParams.set("server", base);
-        if (token) u.searchParams.set("token", token);
-        else u.searchParams.delete("token");
+        u.searchParams.delete("token");
+        u.searchParams.delete("auth");
 
         try {
           await navigator.clipboard.writeText(u.toString());
@@ -708,6 +972,206 @@
         } catch {
           // Fallback (still shows the text to copy).
           window.prompt("Copy this link:", u.toString());
+        }
+      }
+
+      async function ensureConnectedServer() {
+        if (state.mode === "server") return true;
+        const base = normalizeServerBase(el.serverUrlInput.value);
+        if (!base) {
+          toast("Enter a PC Server URL first.");
+          return false;
+        }
+        return connectServer(base, el.serverTokenInput.value, { remember: true });
+      }
+
+      async function signIn() {
+        setError("");
+        const ok = await ensureConnectedServer();
+        if (!ok) return;
+
+        const username = String(el.authUserInput.value || "").trim();
+        const password = String(el.authPassInput.value || "");
+        if (!username || !password) {
+          setError("Enter username + password.");
+          return;
+        }
+
+        setStatus("Signing in…");
+        try {
+          const j = await apiJson("/api/auth/login", { method: "POST", body: { username, password } });
+          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          el.authPassInput.value = "";
+          try {
+            localStorage.setItem("camfordick_last_username", username);
+          } catch {
+            // Ignore.
+          }
+          await refreshMe();
+          renderLibrary();
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          setStatus("Signed in");
+        } catch (err) {
+          console.error(err);
+          setStatus("Sign in failed");
+          setError((err && err.message) || String(err));
+        }
+      }
+
+      async function signUp() {
+        setError("");
+        const ok = await ensureConnectedServer();
+        if (!ok) return;
+
+        const username = String(el.authUserInput.value || "").trim();
+        const password = String(el.authPassInput.value || "");
+        if (!username || !password) {
+          setError("Enter username + password.");
+          return;
+        }
+
+        setStatus("Creating account…");
+        try {
+          const j = await apiJson("/api/auth/signup", { method: "POST", body: { username, password } });
+          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          el.authPassInput.value = "";
+          try {
+            localStorage.setItem("camfordick_last_username", username);
+          } catch {
+            // Ignore.
+          }
+          await refreshMe();
+          renderLibrary();
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          setStatus("Account created");
+        } catch (err) {
+          console.error(err);
+          setStatus("Sign up failed");
+          setError((err && err.message) || String(err));
+        }
+      }
+
+      function signOut() {
+        persistAuthTokenForBase(state.serverBase || window.location.origin, "");
+        state.me = null;
+        setAuthUi();
+        resetLibraryState();
+        renderLibrary();
+        setStatus("Signed out");
+      }
+
+      async function refreshAdminUsers() {
+        if (!state.me || String(state.me.role) !== "admin") {
+          state.adminUsers = [];
+          el.adminUserSelect.innerHTML = "";
+          return;
+        }
+        setAdminMsg("Loading users…");
+        try {
+          const j = await apiJson("/api/admin/users");
+          const users = Array.isArray(j.users) ? j.users : [];
+          state.adminUsers = users;
+          el.adminUserSelect.innerHTML = "";
+          for (const u of users) {
+            const opt = document.createElement("option");
+            opt.value = String(u.username || "");
+            opt.textContent = `${String(u.username || "")} (${String(u.unlockedCount || 0)}/${String(u.quota || 0)})`;
+            // Don't allow selecting admin accounts for quota changes.
+            if (String(u.role) === "admin") opt.disabled = true;
+            el.adminUserSelect.appendChild(opt);
+          }
+          setAdminMsg(`Loaded ${users.length} user${users.length === 1 ? "" : "s"}.`);
+        } catch (err) {
+          console.error(err);
+          setAdminMsg(`Failed: ${(err && err.message) || String(err)}`);
+        }
+      }
+
+      async function adminSetQuota() {
+        setError("");
+        if (!state.me || String(state.me.role) !== "admin") return;
+        const username = String(el.adminUserSelect.value || "").trim();
+        const quota = Math.max(0, Math.floor(Number(el.adminQuotaInput.value || 0)));
+        if (!username) {
+          setAdminMsg("Pick a user.");
+          return;
+        }
+        setAdminMsg("Saving…");
+        try {
+          await apiJson("/api/admin/set-quota", { method: "POST", body: { username, quota } });
+          setAdminMsg("Saved.");
+          await refreshAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setAdminMsg(`Failed: ${(err && err.message) || String(err)}`);
+        }
+      }
+
+      async function playCurrentPreview() {
+        setError("");
+        const path = state.currentPath;
+        if (!path) return;
+        const entry = state.byPath.get(path);
+        if (!entry) return;
+
+        try {
+          let url;
+          if (entry.source === "server") {
+            url = serverPreviewUrl(entry.path);
+            state.currentIsPreview = true;
+          } else {
+            url = await getLocalObjectUrl(entry);
+            state.currentIsPreview = true;
+          }
+          el.player.src = url;
+          el.player.load();
+          if (state.streamOn) await el.player.play();
+
+          // Best-effort 10s preview for local mode (server preview is a 10s clip).
+          if (entry.source !== "server") {
+            const myPath = path;
+            setTimeout(() => {
+              if (state.currentPath !== myPath) return;
+              if (!state.currentIsPreview) return;
+              try {
+                el.player.pause();
+              } catch {
+                // Ignore.
+              }
+            }, 10_000);
+          }
+        } catch (err) {
+          console.error(err);
+          setError("Preview failed.");
+        } finally {
+          setPlayerActions(entry);
+        }
+      }
+
+      async function unlockCurrent() {
+        setError("");
+        const path = state.currentPath;
+        if (!path) return;
+        const entry = state.byPath.get(path);
+        if (!entry || entry.source !== "server") return;
+
+        setStatus("Unlocking…");
+        try {
+          const j = await apiJson("/api/unlock", { method: "POST", body: { path: entry.path } });
+          entry.unlocked = true;
+          if (state.me) {
+            if (typeof j.quota === "number") state.me.quota = j.quota;
+            if (typeof j.unlockedCount === "number") state.me.unlockedCount = j.unlockedCount;
+            setAuthUi();
+          }
+          setPlayerActions(entry);
+          renderLibrary();
+          await loadIntoPlayer(entry.path);
+          setStatus("Unlocked");
+        } catch (err) {
+          console.error(err);
+          setStatus("Unlock failed");
+          setError((err && err.message) || String(err));
         }
       }
 
@@ -755,15 +1219,114 @@
         }
       }
 
+      function authStorageKeyForBase(base) {
+        let host = "";
+        try {
+          host = base ? new URL(base).host : window.location.host;
+        } catch {
+          host = window.location.host;
+        }
+        return `camfordick_auth_${host}`;
+      }
+
+      function restoreAuthTokenForBase(base) {
+        try {
+          state.authToken = localStorage.getItem(authStorageKeyForBase(base)) || "";
+        } catch {
+          state.authToken = "";
+        }
+      }
+
+      function persistAuthTokenForBase(base, token) {
+        const tok = String(token || "").trim();
+        state.authToken = tok;
+        try {
+          const key = authStorageKeyForBase(base);
+          if (tok) localStorage.setItem(key, tok);
+          else localStorage.removeItem(key);
+        } catch {
+          // Ignore.
+        }
+      }
+
+      async function apiJson(pathname, { method = "GET", body = null } = {}) {
+        /** @type {RequestInit} */
+        const init = { method, cache: "no-store" };
+        if (body !== null) {
+          init.headers = { "Content-Type": "application/json" };
+          init.body = JSON.stringify(body);
+        }
+        const r = await fetch(buildServerUrl(pathname), init);
+        let j = null;
+        try {
+          j = await r.json();
+        } catch {
+          // Ignore.
+        }
+        if (!r.ok || !j || !j.ok) {
+          const err = (j && j.error) || `HTTP ${r.status}`;
+          const e = new Error(err);
+          e.status = r.status;
+          throw e;
+        }
+        return j;
+      }
+
+      async function refreshMe() {
+        if (state.mode !== "server") {
+          state.me = null;
+          setAuthUi();
+          return false;
+        }
+        try {
+          const r = await fetch(buildServerUrl("/api/me"), { cache: "no-store" });
+          if (r.status === 401) {
+            state.me = null;
+            if (state.authToken) persistAuthTokenForBase(state.serverBase || window.location.origin, "");
+            setAuthUi();
+            return false;
+          }
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const j = await r.json();
+          if (!j || !j.ok || !j.user) throw new Error("Bad server response");
+          state.me = {
+            username: String(j.user.username || ""),
+            role: String(j.user.role || ""),
+            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+          };
+          setAuthUi();
+          if (String(state.me.role) === "admin") refreshAdminUsers().catch(() => {});
+          return true;
+        } catch {
+          state.me = null;
+          setAuthUi();
+          return false;
+        }
+      }
+
       function buildServerUrl(pathname) {
         const base = state.serverBase || window.location.origin;
         const u = new URL(pathname, base);
         if (state.serverToken) u.searchParams.set("token", state.serverToken);
+        if (state.authToken) u.searchParams.set("auth", state.authToken);
         return u.toString();
       }
 
       function serverMediaUrl(relPath) {
         return buildServerUrl(`/media/${encodePathForUrl(relPath)}`);
+      }
+
+      function serverDownloadUrl(relPath) {
+        return buildServerUrl(`/download/${encodePathForUrl(relPath)}`);
+      }
+
+      function serverThumbUrl(relPath) {
+        return buildServerUrl(`/thumb/${encodePathForUrl(relPath)}`);
+      }
+
+      function serverPreviewUrl(relPath) {
+        return buildServerUrl(`/preview/${encodePathForUrl(relPath)}`);
       }
 
       async function detectServerInfoAt(base) {
@@ -781,9 +1344,19 @@
 
       async function fetchServerVideos() {
         const r = await fetch(buildServerUrl("/api/videos"), { cache: "no-store" });
+        if (r.status === 401) throw new Error("Sign in required");
         if (!r.ok) throw new Error(`Server error (${r.status})`);
         const j = await r.json();
         if (!j || !j.ok || !Array.isArray(j.videos)) throw new Error("Bad server response");
+        if (j.user) {
+          state.me = {
+            username: String(j.user.username || ""),
+            role: String(j.user.role || ""),
+            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+          };
+          setAuthUi();
+        }
         /** @type {ServerVideoEntry[]} */
         const list = j.videos.map((v) => ({
           source: "server",
@@ -792,6 +1365,7 @@
           ext: String(v.ext || "").toLowerCase(),
           size: typeof v.size === "number" ? v.size : undefined,
           mtimeMs: typeof v.mtimeMs === "number" ? v.mtimeMs : undefined,
+          unlocked: !!v.unlocked,
         }));
         list.sort((a, b) => a.path.localeCompare(b.path));
         return list;
@@ -894,14 +1468,17 @@
         if (state.videos.length === 0) {
           el.emptyHint.textContent =
             state.mode === "server"
-              ? "Server is reachable, but no matching video files were found."
+              ? state.me || state.serverToken
+                ? "Server is reachable, but no matching video files were found."
+                : "Sign in to load the server library (or enter a legacy token)."
               : "Folder is accessible, but no matching video files were found.";
           el.emptyState.classList.remove("hidden");
           return;
         }
 
         el.emptyState.classList.add("hidden");
-        ensureThumbObserver();
+        const needsLocalThumbs = state.videos.some((v) => v.source === "local" && THUMB_PREVIEW_EXTS.has(v.ext));
+        if (needsLocalThumbs) ensureThumbObserver();
 
         for (const v of state.videos) {
           const btn = document.createElement("button");
@@ -917,7 +1494,39 @@
           preview.className =
             "relative aspect-video overflow-hidden bg-gradient-to-br from-neonP/10 via-black/30 to-neonT/10";
 
-          if (THUMB_PREVIEW_EXTS.has(v.ext)) {
+          if (v.source === "server") {
+            const img = document.createElement("img");
+            img.className = "h-full w-full object-cover opacity-90 transition group-hover:opacity-100";
+            img.loading = "lazy";
+            img.decoding = "async";
+            img.alt = "";
+            img.src = serverThumbUrl(v.path);
+            img.addEventListener(
+              "error",
+              () => {
+                // Fallback to extension label if thumb generation fails.
+                img.remove();
+                const fallback = document.createElement("div");
+                fallback.className =
+                  "flex h-full w-full items-center justify-center font-mono text-xs tracking-[0.22em] text-zinc-200/80";
+                fallback.textContent = v.ext.toUpperCase();
+                preview.appendChild(fallback);
+              },
+              { once: true }
+            );
+            preview.appendChild(img);
+
+            if (!v.unlocked) {
+              const lock = document.createElement("div");
+              lock.className = "pointer-events-none absolute left-2 top-2";
+              lock.innerHTML = `
+                <div class="rounded-full border border-white/10 bg-black/70 px-2 py-1 font-mono text-[10px] tracking-[0.18em] text-zinc-100/90 backdrop-blur">
+                  LOCKED
+                </div>
+              `;
+              preview.appendChild(lock);
+            }
+          } else if (THUMB_PREVIEW_EXTS.has(v.ext)) {
             const vid = document.createElement("video");
             vid.className =
               "h-full w-full object-cover opacity-90 transition group-hover:opacity-100";
@@ -977,10 +1586,24 @@
         const entry = state.byPath.get(path);
         if (!entry) return;
         state.currentPath = path;
+        state.currentIsPreview = false;
         el.nowPlaying.textContent = path;
+        setPlayerActions(entry);
 
         try {
-          const url = await getPlayableUrl(entry);
+          let url;
+          if (entry.source === "server") {
+            if (entry.unlocked) {
+              url = serverMediaUrl(entry.path);
+              state.currentIsPreview = false;
+            } else {
+              url = serverPreviewUrl(entry.path);
+              state.currentIsPreview = true;
+            }
+          } else {
+            url = await getLocalObjectUrl(entry);
+            state.currentIsPreview = false;
+          }
           el.player.src = url;
           el.player.load();
           renderLibrary(); // refresh highlight
@@ -1057,6 +1680,7 @@
           state.videos = list;
           state.byPath = newByPath;
           clearRemovedUrls(newByPath);
+          if (state.currentPath) setPlayerActions(newByPath.get(state.currentPath) || null);
 
           if (state.currentPath && !newByPath.has(state.currentPath)) {
             state.currentPath = null;
@@ -1080,8 +1704,17 @@
           }
         } catch (err) {
           console.error(err);
-          setStatus(usingServer ? "Fetch failed" : "Scan failed");
-          setError((err && err.message) || String(err));
+          const msg = (err && err.message) || String(err);
+          if (usingServer && String(msg) === "Sign in required") {
+            setStatus("Sign in required");
+            setError("Sign in to load the server library.");
+            state.videos = [];
+            state.byPath = new Map();
+            renderLibrary();
+          } else {
+            setStatus(usingServer ? "Fetch failed" : "Scan failed");
+            setError(msg);
+          }
         } finally {
           state.scanInProgress = false;
           el.refreshBtn.disabled = false;
@@ -1154,6 +1787,21 @@
         el.streamToggleBtn.addEventListener("click", () => toggleStream(null));
         el.overlayStreamOnBtn.addEventListener("click", () => toggleStream(true));
 
+        el.signInBtn.addEventListener("click", () => signIn());
+        el.signUpBtn.addEventListener("click", () => signUp());
+        el.signOutBtn.addEventListener("click", () => signOut());
+        el.authPassInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") signIn();
+        });
+
+        el.adminRefreshUsersBtn.addEventListener("click", () => refreshAdminUsers());
+        el.adminSetQuotaBtn.addEventListener("click", () => adminSetQuota());
+        el.adminUserSelect.addEventListener("change", () => {
+          const u = state.adminUsers.find((x) => String(x.username || "") === String(el.adminUserSelect.value || ""));
+          if (!u) return;
+          if (typeof u.quota === "number") el.adminQuotaInput.value = String(u.quota);
+        });
+
         el.connectServerBtn.addEventListener("click", () =>
           connectServer(el.serverUrlInput.value, el.serverTokenInput.value, { remember: true })
         );
@@ -1165,6 +1813,9 @@
         el.serverTokenInput.addEventListener("keydown", (e) => {
           if (e.key === "Enter") connectServer(el.serverUrlInput.value, el.serverTokenInput.value, { remember: true });
         });
+
+        el.playerPreviewBtn.addEventListener("click", () => playCurrentPreview());
+        el.playerUnlockBtn.addEventListener("click", () => unlockCurrent());
 
         el.player.addEventListener("error", () => {
           const err = el.player.error;
@@ -1179,6 +1830,7 @@
         setupPiP();
         setupFullscreen();
         setupAutoRescan();
+        setPlayerActions(null);
 
         if (!navigator.storage || !navigator.storage.persist) {
           // best effort only
@@ -1192,9 +1844,11 @@
 
         let savedServerRaw = "";
         let savedTokenRaw = "";
+        let savedUsername = "";
         try {
           savedServerRaw = localStorage.getItem("camfordick_server_base") || "";
           savedTokenRaw = localStorage.getItem("camfordick_server_token") || "";
+          savedUsername = localStorage.getItem("camfordick_last_username") || "";
         } catch {
           // Ignore.
         }
@@ -1204,6 +1858,7 @@
 
         if (initialServerRaw) el.serverUrlInput.value = initialServerRaw;
         if (initialTokenRaw) el.serverTokenInput.value = initialTokenRaw;
+        if (savedUsername && !el.authUserInput.value) el.authUserInput.value = savedUsername;
 
         // Prefer an explicitly configured server (GitHub Pages use-case).
         if (initialServerRaw) {
@@ -1219,18 +1874,29 @@
           state.serverInfo = info;
           state.serverBase = "";
           state.serverToken = String(initialTokenRaw || "").trim();
+          state.me = null;
+          restoreAuthTokenForBase(window.location.origin);
           state.dirHandle = null;
           setSupportPill();
           setServerFormUi();
+          setAuthUi();
           setFolderName(`Server: ${window.location.host}`);
           setStatus("Server connected");
           renderLibrary();
-          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          const authed = await refreshMe();
+          if (authed || state.serverToken) {
+            await refreshLibrary({ reason: "startup", toastOnChange: false });
+          } else {
+            setStatus("Sign in required");
+            el.emptyHint.textContent = "Sign in to load the server library (or enter a legacy token).";
+            el.emptyState.classList.remove("hidden");
+          }
           return;
         }
 
         setSupportPill();
         setServerFormUi();
+        setAuthUi();
         await tryRestoreFolderHandle();
 
         renderLibrary();
