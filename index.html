@@ -91,13 +91,13 @@
   </head>
 
 	  <body class="min-h-screen text-zinc-100 antialiased">
-	    <button
-	      id="cornerAdminBtn"
-	      class="neon-btn fixed right-4 top-4 z-50 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-display text-xs font-semibold tracking-wide text-white/90 backdrop-blur transition will-change-transform"
-	      type="button"
-	      title="Admin / Settings"
-	    >
-	      Admin
+		    <button
+		      id="cornerAdminBtn"
+		      class="hidden neon-btn fixed right-4 top-4 z-50 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-display text-xs font-semibold tracking-wide text-white/90 backdrop-blur transition will-change-transform"
+		      type="button"
+		      title="Admin / Settings"
+		    >
+		      Admin
 	    </button>
 	    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
 	      <header class="rounded-2xl border border-white/10 bg-panel/60 p-5 glow-panel">
@@ -112,18 +112,16 @@
                   >Camfordick</span
                 >
               </h1>
-              <p class="text-xs text-zinc-300/90">
-                Local folder (File System Access API + IndexedDB) or PC server feed (no uploads)
-              </p>
+	              <p class="text-xs text-zinc-300/90">Private video gallery</p>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <span
-              id="supportPill"
-              class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
-              >Checking browser support…</span
-            >
+	            <span
+	              id="supportPill"
+	              class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
+	              >Checking browser support…</span
+	            >
           </div>
         </div>
 
@@ -727,11 +725,14 @@
 
       function setCornerUi() {
         const show = !!state.cornerOpen;
-        el.folderControlsRow.classList.toggle("hidden", !show);
-        el.serverConnectRow.classList.toggle("hidden", !show);
-        el.statsRow.classList.toggle("hidden", !show);
+        const role = state.me ? String(state.me.role || "") : "";
+        const isAdmin = role === "admin";
 
-        const isAdmin = state.me && String(state.me.role) === "admin";
+        // Keep advanced controls hidden from normal users.
+        el.folderControlsRow.classList.add("hidden");
+        el.serverConnectRow.classList.add("hidden");
+        el.statsRow.classList.add("hidden");
+
         el.adminPanel.classList.toggle("hidden", !(show && isAdmin));
         el.contentTokensPanel.classList.toggle("hidden", !(show && isAdmin));
       }
@@ -758,6 +759,11 @@
       function setAuthUi() {
         const usingServer = state.mode === "server";
         const me = state.me;
+        const role = me ? String(me.role || "") : "";
+        const isAdmin = role === "admin";
+
+        el.cornerAdminBtn.classList.toggle("hidden", !isAdmin);
+        if (!isAdmin) state.cornerOpen = false;
         const signupEnabled =
           !usingServer ||
           !state.serverInfo ||
@@ -790,26 +796,26 @@
           return;
         }
 
-        const role = String(me.role || "user");
-        const who = me.username ? me.username : role === "admin" ? "admin" : "user";
-        el.authPill.textContent = role === "admin" ? `Signed in: ${who} (admin)` : `Signed in: ${who}`;
-        el.signInBtn.classList.add("hidden");
-        el.signUpBtn.classList.add("hidden");
-        el.signOutBtn.classList.remove("hidden");
+	        const roleLabel = role || "user";
+	        const who = me.username ? me.username : roleLabel === "admin" ? "admin" : "user";
+	        el.authPill.textContent =
+	          roleLabel === "admin" ? `Signed in: ${who} (admin)` : roleLabel === "token-user" ? "Access: Token" : `Signed in: ${who}`;
+	        el.signInBtn.classList.add("hidden");
+	        el.signUpBtn.classList.add("hidden");
+	        el.signOutBtn.classList.remove("hidden");
 
-        el.creditsPill.classList.remove("hidden");
-        if (role === "admin" || me.quota === -1) {
-          el.creditsText.textContent = "unlimited";
-        } else {
-          const q = typeof me.quota === "number" ? me.quota : 0;
-          const u = typeof me.unlockedCount === "number" ? me.unlockedCount : 0;
-          el.creditsText.textContent = `${u}/${q}`;
-        }
+	        el.creditsPill.classList.remove("hidden");
+	        if (roleLabel === "admin" || me.quota === -1) {
+	          el.creditsText.textContent = "unlimited";
+	        } else {
+	          const q = typeof me.quota === "number" ? me.quota : 0;
+	          const u = typeof me.unlockedCount === "number" ? me.unlockedCount : 0;
+	          el.creditsText.textContent = `${u}/${q}`;
+	        }
 
-        const isAdmin = role === "admin";
-        // Admin features are behind the "Admin" corner button.
-        el.adminPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
-        el.contentTokensPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
+	        // Admin features are behind the "Admin" corner button.
+	        el.adminPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
+	        el.contentTokensPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
 
         setViewUi();
       }
@@ -828,7 +834,9 @@
         if (!hasEntry) return;
         if (entry.source !== "server") return;
 
-        const isAdmin = state.me && String(state.me.role) === "admin";
+        const role = state.me ? String(state.me.role || "") : "";
+        const isAdmin = role === "admin";
+        const isTokenUser = role === "token-user";
         const unlocked = !!entry.unlocked || isAdmin;
         const previewSeconds =
           state.serverInfo && state.serverInfo.auth && typeof state.serverInfo.auth.previewSeconds === "number"
@@ -836,7 +844,8 @@
             : 10;
 
         if (unlocked) {
-          el.playerHint.textContent = isAdmin ? "Admin access: full watch/download." : "Unlocked: full watch/download.";
+          el.playerHint.textContent =
+            isAdmin ? "Admin access: full watch/download." : isTokenUser ? "Token access: full watch/download." : "Unlocked: full watch/download.";
           el.playerDownloadBtn.classList.remove("hidden");
           el.playerDownloadBtn.href = serverDownloadUrl(entry.path);
           return;
@@ -847,6 +856,10 @@
 
         if (!state.me) {
           el.playerHint.textContent = `Preview only (${previewSeconds}s). Sign in to unlock.`;
+          return;
+        }
+        if (isTokenUser) {
+          el.playerHint.textContent = `Preview only (${previewSeconds}s). Token limit reached.`;
           return;
         }
 
@@ -1142,13 +1155,10 @@
         const origin = window.location.origin;
         const info = await detectServerInfoAt(origin);
         if (info) return connectServer(origin, "", { remember: false, info });
-
-        const base = normalizeServerBase(el.serverUrlInput.value);
-        if (!base) {
-          toast("Open Admin and set a PC Server URL first.");
-          return false;
-        }
-        return connectServer(base, el.serverTokenInput.value, { remember: true });
+        setStatus("Server offline");
+        setError("Server is offline.");
+        toast("Server is offline.");
+        return false;
       }
 
       async function signIn() {
@@ -1533,14 +1543,25 @@
             
             // Copy token button
             const copyBtn = document.createElement("button");
-            copyBtn.className = "neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-1 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform";
-            copyBtn.textContent = "Copy";
-            copyBtn.onclick = () => {
-              const tokenUrl = `${window.location.origin}?server=${encodeURIComponent(state.serverBase)}&contentToken=${encodeURIComponent(token.token)}`;
-              navigator.clipboard.writeText(tokenUrl).then(() => {
-                toast("Token link copied to clipboard!");
-              });
-            };
+	            copyBtn.className = "neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-1 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform";
+	            copyBtn.textContent = "Copy";
+	            copyBtn.onclick = () => {
+	              try {
+	                const u = new URL(window.location.href);
+	                u.searchParams.delete("auth");
+	                u.searchParams.delete("token");
+	                u.searchParams.delete("server");
+	                u.searchParams.delete("contentToken");
+	                if (state.serverBase && state.serverBase !== window.location.origin) {
+	                  u.searchParams.set("server", state.serverBase);
+	                }
+	                u.searchParams.set("contentToken", token.token);
+	                navigator.clipboard.writeText(u.toString()).then(() => toast("Token link copied to clipboard!"));
+	              } catch {
+	                const tokenUrl = `${window.location.origin}?contentToken=${encodeURIComponent(token.token)}`;
+	                navigator.clipboard.writeText(tokenUrl).then(() => toast("Token link copied to clipboard!"));
+	              }
+	            };
             
             // Delete token button
             const deleteBtn = document.createElement("button");
@@ -1981,30 +2002,22 @@
         setPlayerActions(entry);
         setViewUi();
 
-        try {
-          let url;
-          if (entry.source === "server") {
-            if (entry.unlocked) {
-              url = serverMediaUrl(entry.path);
-            } else {
-              // Check if we have a valid content token that allows access to this video
-              const hasValidToken = state.me && state.me.contentTokens && 
-                state.me.contentTokens.some(token => {
-                  // Check if token is valid and allows this video
-                  return token.currentUses < token.maxUses && 
-                         (!token.allowedVideos || token.allowedVideos.includes(entry.path));
-                });
-              
-              if (!hasValidToken) {
-                setError("Access denied. Video is locked.");
-                return;
-              }
-              
-              url = serverMediaUrl(entry.path);
-            }
-          } else {
-            url = await getLocalObjectUrl(entry);
-          }
+	        try {
+	          let url;
+	          if (entry.source === "server") {
+	            const role = state.me ? String(state.me.role || "") : "";
+	            const isAdmin = role === "admin";
+	            const unlocked = !!entry.unlocked || isAdmin;
+	            if (unlocked) {
+	              url = serverMediaUrl(entry.path);
+	              state.currentIsPreview = false;
+	            } else {
+	              url = serverPreviewUrl(entry.path);
+	              state.currentIsPreview = true;
+	            }
+	          } else {
+	            url = await getLocalObjectUrl(entry);
+	          }
           el.player.src = url;
           el.player.load();
           if (state.streamOn) await el.player.play();

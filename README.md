@@ -2,7 +2,12 @@
 
 Static web UI (GitHub Pages) + your PC serves the actual video files (not stored in git).
 
-## What People Open
+## What People Open (Recommended)
+
+- Your domain (example: `https://cptcommunityadults.fun/`)
+- That domain is pointed at your running `server.js` via an HTTPS tunnel (Cloudflare Tunnel), so the UI auto-connects and users never need to type a "server URL".
+
+## Alternate Setup (GitHub Pages UI)
 
 - GitHub Pages URL (the UI)
 - The UI connects to your PC server over HTTPS (via a tunnel) to list/stream videos
@@ -26,6 +31,32 @@ node server.js
 ```
 
 The server prints local URLs. For remote viewers you need an HTTPS public URL (next section).
+
+## Use Your Own Domain (Cloudflare Tunnel)
+
+If you want users to simply open `https://cptcommunityadults.fun/` with no server setup UI:
+
+1. Put your domain on Cloudflare (DNS).
+2. Create a Cloudflare Tunnel that points to your local server `http://127.0.0.1:5173`.
+3. Route the hostname (DNS) to that tunnel.
+
+High level commands (run on the machine/container running `server.js`):
+
+```bash
+# One-time login to Cloudflare in your browser
+cloudflared tunnel login
+
+# Create a named tunnel (pick a name)
+cloudflared tunnel create camodick
+
+# Route your domain to that tunnel
+cloudflared tunnel route dns camodick cptcommunityadults.fun
+
+# Run the tunnel (it forwards HTTPS -> your local server)
+cloudflared tunnel run camodick
+```
+
+Once that’s active, users just open your domain and sign in.
 
 ## Accounts + Quotas
 
