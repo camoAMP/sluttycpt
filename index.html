@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camfordick</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+              mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+            },
+            colors: {
+              ink: "#05020b",
+              panel: "rgba(10, 7, 18, 0.65)",
+              neonP: "#a855f7",
+              neonT: "#14b8a6",
+              neonX: "#ec4899",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      body {
+        background:
+          radial-gradient(1100px 650px at 14% 12%, rgba(168, 85, 247, 0.18), transparent 55%),
+          radial-gradient(900px 560px at 84% 18%, rgba(20, 184, 166, 0.16), transparent 52%),
+          radial-gradient(1000px 650px at 50% 94%, rgba(236, 72, 153, 0.11), transparent 58%),
+          #05020b;
+      }
+
+      .glow-panel {
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+          0 0 42px rgba(168, 85, 247, 0.14),
+          0 0 34px rgba(20, 184, 166, 0.1);
+      }
+
+      .neon-btn {
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+          0 0 22px rgba(168, 85, 247, 0.12);
+      }
+
+      .neon-btn:hover {
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.11) inset,
+          0 0 26px rgba(168, 85, 247, 0.18),
+          0 0 20px rgba(20, 184, 166, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .scan-shimmer {
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.04),
+          rgba(20, 184, 166, 0.14),
+          rgba(255, 255, 255, 0.04)
+        );
+        background-size: 240% 100%;
+        animation: shimmer 1.6s linear infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -40% 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen text-zinc-100 antialiased">
+    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
+      <header class="rounded-2xl border border-white/10 bg-panel/60 p-5 glow-panel">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div
+              class="h-10 w-10 rounded-xl border border-white/10 bg-gradient-to-br from-neonP/30 via-neonX/15 to-neonT/25"
+            ></div>
+            <div>
+              <h1 class="font-display text-2xl font-bold tracking-tight">
+                <span class="bg-gradient-to-r from-neonP via-neonX to-neonT bg-clip-text text-transparent"
+                  >Camfordick</span
+                >
+              </h1>
+              <p class="text-xs text-zinc-300/90">
+                Local folder (File System Access API + IndexedDB) or PC server feed (no uploads)
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <span
+              id="supportPill"
+              class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
+              >Checking browser support…</span
+            >
+          </div>
+        </div>
+
+	        <div class="mt-4 flex flex-wrap items-center gap-2">
+	          <button
+	            id="selectFolderBtn"
+            class="neon-btn rounded-xl bg-gradient-to-r from-neonP/70 to-neonX/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+            type="button"
+          >
+            Select Video Folder
+          </button>
+
+          <button
+            id="refreshBtn"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+            type="button"
+          >
+            Refresh
+          </button>
+
+          <button
+            id="streamToggleBtn"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+            type="button"
+          >
+            Stream: ON
+          </button>
+
+          <button
+            id="pipBtn"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+            type="button"
+            title="Picture-in-Picture"
+          >
+            PiP
+          </button>
+
+          <button
+            id="fsBtn"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+            type="button"
+            title="Fullscreen"
+          >
+            Fullscreen
+	          </button>
+	        </div>
+
+	        <div class="mt-3 flex flex-wrap items-end gap-2">
+	          <div class="min-w-[260px] flex-1">
+	            <label for="serverUrlInput" class="block text-[11px] text-zinc-400">PC Server URL (HTTPS)</label>
+	            <input
+	              id="serverUrlInput"
+	              class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+	              placeholder="https://xxxx.trycloudflare.com"
+	              autocomplete="off"
+	              inputmode="url"
+	            />
+	          </div>
+
+	          <div class="w-[180px]">
+	            <label for="serverTokenInput" class="block text-[11px] text-zinc-400">Token (optional)</label>
+	            <input
+	              id="serverTokenInput"
+	              class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+	              placeholder="shared secret"
+	              autocomplete="off"
+	            />
+	          </div>
+
+	          <button
+	            id="connectServerBtn"
+	            class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+	            type="button"
+	            title="Connect to a PC server URL (use a tunnel for remote viewers)"
+	          >
+	            Connect Server
+	          </button>
+
+	          <button
+	            id="copyLinkBtn"
+	            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+	            type="button"
+	            title="Copy a share link with ?server=…&token=… (token will be included if present)"
+	          >
+	            Copy Link
+	          </button>
+
+	          <button
+	            id="disconnectServerBtn"
+	            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+	            type="button"
+	            title="Switch back to local folder mode"
+	          >
+	            Use Local
+	          </button>
+	        </div>
+
+	        <div class="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
+	          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+	            <div class="text-zinc-400">Folder</div>
+	            <div id="folderName" class="mt-0.5 truncate font-mono text-zinc-100">None</div>
+          </div>
+
+          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+            <div class="text-zinc-400">Status</div>
+            <div id="statusText" class="mt-0.5 truncate font-mono text-zinc-100">Idle</div>
+          </div>
+
+          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+            <div class="text-zinc-400">Videos Found</div>
+            <div id="videoCount" class="mt-0.5 font-mono text-zinc-100">0</div>
+          </div>
+
+          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+            <div class="text-zinc-400">Notes</div>
+            <div class="mt-0.5 font-mono text-zinc-100">
+              mp4/webm usually play; mkv/avi depend on codecs
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="mt-7 flex flex-col items-center gap-7">
+        <section class="w-[92vw] max-w-[1200px] md:w-[70vw]">
+          <div class="rounded-2xl border border-white/10 bg-black/30 glow-panel">
+            <div id="playerShell" class="relative overflow-hidden rounded-2xl">
+              <div class="aspect-video bg-black">
+                <video id="player" class="h-full w-full bg-black object-contain" controls playsinline></video>
+              </div>
+
+              <div
+                id="streamOffOverlay"
+                class="hidden absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/95 text-center"
+              >
+                <div
+                  class="rounded-full border border-white/10 bg-gradient-to-r from-neonP/20 via-neonX/10 to-neonT/20 px-4 py-1.5 font-display text-sm font-semibold tracking-wide text-white/90"
+                >
+                  Stream Off
+                </div>
+                <div class="max-w-[42ch] text-xs text-zinc-300/90">
+                  The current video is paused. Toggle Stream back on to resume playback.
+                </div>
+                <button
+                  id="overlayStreamOnBtn"
+                  type="button"
+                  class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+                >
+                  Turn Stream On
+                </button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+              <div class="truncate text-zinc-300">
+                Now Playing:
+                <span id="nowPlaying" class="font-mono text-zinc-100">Nothing loaded</span>
+              </div>
+              <div id="errorText" class="font-mono text-xs text-rose-400"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="w-[92vw] max-w-[1200px] md:w-[70vw]">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="font-display text-lg font-semibold tracking-wide">Library</h2>
+            <div class="text-xs text-zinc-400">
+              Auto-rescan: <span id="autoRescanLabel" class="font-mono text-zinc-200">15s</span>
+            </div>
+          </div>
+
+          <div id="grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"></div>
+
+          <div
+            id="emptyState"
+            class="mt-6 hidden rounded-2xl border border-white/10 bg-black/20 p-6 text-zinc-300"
+          >
+            <div class="font-display text-base font-semibold">No videos listed yet</div>
+            <div class="mt-1 text-sm text-zinc-300/90">
+              Use <span class="font-mono text-zinc-100">Select Video Folder</span> for local access, or run the PC
+              server to feed content to any device on your network. New videos appear automatically (periodic
+              rescan) or via <span class="font-mono text-zinc-100">Refresh</span>.
+            </div>
+            <div id="emptyHint" class="mt-2 text-xs text-zinc-400"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div
+      id="toast"
+      class="pointer-events-none fixed bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs text-zinc-200 shadow-[0_0_30px_rgba(168,85,247,0.25)] backdrop-blur"
+    ></div>
+
+    <script>
+      "use strict";
+
+      const VIDEO_EXTS = new Set(["mp4", "webm", "mkv", "avi"]);
+      const THUMB_PREVIEW_EXTS = new Set(["mp4", "webm"]);
+
+      /**
+       * @typedef {{source:"local",path:string,name:string,ext:string,handle:FileSystemFileHandle}} LocalVideoEntry
+       * @typedef {{source:"server",path:string,name:string,ext:string,size?:number,mtimeMs?:number}} ServerVideoEntry
+       * @typedef {LocalVideoEntry | ServerVideoEntry} VideoEntry
+       */
+
+      const state = {
+        mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
+        serverInfo: null, // from /api/info
+        serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
+        serverToken: "",
+        dirHandle: null,
+        videos: /** @type {VideoEntry[]} */ ([]),
+        byPath: /** @type {Map<string, VideoEntry>} */ (new Map()),
+        urlCache: new Map(), // local: path -> objectURL
+        streamOn: true,
+        currentPath: null,
+        scanInProgress: false,
+        scanSeq: 0,
+        autoRescanMs: 15_000,
+        toastTimer: null,
+        thumbObserver: null,
+      };
+
+      const el = {
+        supportPill: document.getElementById("supportPill"),
+        selectFolderBtn: document.getElementById("selectFolderBtn"),
+        refreshBtn: document.getElementById("refreshBtn"),
+        streamToggleBtn: document.getElementById("streamToggleBtn"),
+        pipBtn: document.getElementById("pipBtn"),
+        fsBtn: document.getElementById("fsBtn"),
+        serverUrlInput: document.getElementById("serverUrlInput"),
+        serverTokenInput: document.getElementById("serverTokenInput"),
+        connectServerBtn: document.getElementById("connectServerBtn"),
+        copyLinkBtn: document.getElementById("copyLinkBtn"),
+        disconnectServerBtn: document.getElementById("disconnectServerBtn"),
+        folderName: document.getElementById("folderName"),
+        statusText: document.getElementById("statusText"),
+        videoCount: document.getElementById("videoCount"),
+        playerShell: document.getElementById("playerShell"),
+        player: document.getElementById("player"),
+        streamOffOverlay: document.getElementById("streamOffOverlay"),
+        overlayStreamOnBtn: document.getElementById("overlayStreamOnBtn"),
+        nowPlaying: document.getElementById("nowPlaying"),
+        errorText: document.getElementById("errorText"),
+        grid: document.getElementById("grid"),
+        emptyState: document.getElementById("emptyState"),
+        emptyHint: document.getElementById("emptyHint"),
+        toast: document.getElementById("toast"),
+        autoRescanLabel: document.getElementById("autoRescanLabel"),
+      };
+
+      const idb = (() => {
+        const DB_NAME = "camfordick-db";
+        const STORE = "kv";
+        /** @type {Promise<IDBDatabase> | null} */
+        let dbp = null;
+
+        function open() {
+          if (dbp) return dbp;
+          dbp = new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = () => {
+              const db = req.result;
+              if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          return dbp;
+        }
+
+        async function get(key) {
+          const db = await open();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, "readonly");
+            const store = tx.objectStore(STORE);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+        }
+
+        async function set(key, val) {
+          const db = await open();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req = store.put(val, key);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
+        }
+
+        async function del(key) {
+          const db = await open();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, "readwrite");
+            const store = tx.objectStore(STORE);
+            const req = store.delete(key);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+          });
+        }
+
+        return { get, set, del };
+      })();
+
+      function toast(msg) {
+        if (!msg) return;
+        el.toast.textContent = msg;
+        el.toast.classList.remove("hidden");
+        if (state.toastTimer) clearTimeout(state.toastTimer);
+        state.toastTimer = setTimeout(() => el.toast.classList.add("hidden"), 2400);
+      }
+
+      function setStatus(msg) {
+        el.statusText.textContent = msg || "";
+      }
+
+      function setError(msg) {
+        el.errorText.textContent = msg || "";
+      }
+
+      function setFolderName(msg) {
+        el.folderName.textContent = msg || "None";
+      }
+
+      function setStreamUi() {
+        el.streamToggleBtn.textContent = state.streamOn ? "Stream: ON" : "Stream: OFF";
+        el.streamToggleBtn.classList.toggle("bg-gradient-to-r", !state.streamOn);
+        el.streamToggleBtn.classList.toggle("from-neonX/55", !state.streamOn);
+        el.streamToggleBtn.classList.toggle("to-neonP/55", !state.streamOn);
+        el.streamOffOverlay.classList.toggle("hidden", state.streamOn);
+      }
+
+      function resetLibraryState() {
+        // Clear any cached object URLs so switching folders can't accidentally reuse old URLs.
+        for (const url of state.urlCache.values()) {
+          try {
+            URL.revokeObjectURL(url);
+          } catch {
+            // Ignore.
+          }
+        }
+        state.urlCache.clear();
+
+        state.videos = [];
+        state.byPath = new Map();
+        state.currentPath = null;
+        el.videoCount.textContent = "0";
+        el.nowPlaying.textContent = "Nothing loaded";
+
+        try {
+          el.player.pause();
+          el.player.removeAttribute("src");
+          el.player.load();
+        } catch {
+          // Ignore.
+        }
+      }
+
+      async function hasReadPermission(handle) {
+        if (!handle || typeof handle.queryPermission !== "function") return false;
+        try {
+          return (await handle.queryPermission({ mode: "read" })) === "granted";
+        } catch {
+          return false;
+        }
+      }
+
+      async function requestReadPermission(handle) {
+        if (!handle || typeof handle.requestPermission !== "function") return false;
+        try {
+          return (await handle.requestPermission({ mode: "read" })) === "granted";
+        } catch {
+          return false;
+        }
+      }
+
+      function setSupportPill() {
+        if (state.mode === "server") {
+          let host = "";
+          try {
+            host = state.serverBase ? new URL(state.serverBase).host : window.location.host;
+          } catch {
+            host = state.serverBase || window.location.host;
+          }
+
+          el.supportPill.textContent = host ? `Mode: SERVER (${host})` : "Mode: SERVER";
+          el.supportPill.className =
+            "rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200/90";
+          return;
+        }
+
+        const hasApi = "showDirectoryPicker" in window;
+        const secure = window.isSecureContext;
+        if (!hasApi) {
+          el.supportPill.textContent = "File System Access API: NOT SUPPORTED (use Chrome/Edge)";
+          el.supportPill.className =
+            "rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs text-rose-200/90";
+          return;
+        }
+
+        if (!secure) {
+          el.supportPill.textContent = "Local folder requires https/localhost.";
+          el.supportPill.className =
+            "rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-200/90";
+          return;
+        }
+
+        el.supportPill.textContent = "Mode: LOCAL FOLDER";
+        el.supportPill.className =
+          "rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200/90";
+      }
+
+      async function tryRestoreFolderHandle() {
+        setStatus("Restoring saved folder handle…");
+        try {
+          const saved = await idb.get("dirHandle");
+          if (!saved) {
+            setStatus("No saved folder handle");
+            return;
+          }
+
+          // Avoid permission prompts on page load; only check existing permission.
+          const ok = await hasReadPermission(saved);
+          if (!ok) {
+            state.mode = "local";
+            state.serverInfo = null;
+            setSupportPill();
+            setServerFormUi();
+            setStatus("Saved folder found, permission needed");
+            setFolderName((saved && saved.name) || "Saved folder");
+            el.emptyHint.textContent = "Click Select Video Folder to re-grant permission.";
+            return;
+          }
+
+          state.mode = "local";
+          state.serverInfo = null;
+          state.dirHandle = saved;
+          setSupportPill();
+          setServerFormUi();
+          setFolderName(saved.name || "Selected folder");
+          setStatus("Folder access restored");
+        } catch (err) {
+          console.warn("Failed to restore saved handle:", err);
+          setStatus("Could not restore saved folder");
+          el.emptyHint.textContent = "Your browser may be blocking IndexedDB, or handle persistence is unsupported.";
+        }
+      }
+
+      async function selectFolder() {
+        setError("");
+        if (!("showDirectoryPicker" in window)) {
+          toast("Your browser does not support selecting a folder (use Chrome/Edge).");
+          return;
+        }
+        if (!window.isSecureContext) {
+          toast("Local folder access requires https/localhost. Use the PC server for LAN streaming.");
+          return;
+        }
+
+        try {
+          const handle = await window.showDirectoryPicker({ mode: "read" });
+          // User gesture: safe moment to request permission if needed.
+          const ok = (await hasReadPermission(handle)) || (await requestReadPermission(handle));
+          if (!ok) {
+            toast("Folder permission denied.");
+            return;
+          }
+
+          resetLibraryState();
+          state.mode = "local";
+          state.serverInfo = null;
+          state.dirHandle = handle;
+          setSupportPill();
+          setServerFormUi();
+          setFolderName(handle.name || "Selected folder");
+          setStatus("Folder selected");
+
+          try {
+            await idb.set("dirHandle", handle);
+          } catch (err) {
+            console.warn("Failed to persist folder handle:", err);
+            toast("Could not persist folder handle (browser limitation).");
+          }
+
+          await refreshLibrary({ reason: "select", toastOnChange: true });
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+          console.error(err);
+          setError((err && err.message) || String(err));
+        }
+      }
+
+      function setServerFormUi() {
+        const isServer = state.mode === "server";
+        el.disconnectServerBtn.disabled = !isServer;
+        el.disconnectServerBtn.classList.toggle("opacity-50", !isServer);
+      }
+
+      async function connectServer(baseRaw, tokenRaw, { remember = true } = {}) {
+        setError("");
+
+        const base = normalizeServerBase(baseRaw);
+        const token = String(tokenRaw || "").trim();
+        if (!base) {
+          setError("Enter a valid PC Server URL (example: https://xxxx.trycloudflare.com).");
+          return false;
+        }
+
+        el.serverUrlInput.value = base;
+        el.serverTokenInput.value = token;
+        setStatus("Connecting to server…");
+
+        const info = await detectServerInfoAt(base);
+        if (!info) {
+          setStatus("Server not reachable");
+          setError("Could not reach /api/info on that server URL.");
+          return false;
+        }
+
+        resetLibraryState();
+        state.mode = "server";
+        state.serverInfo = info;
+        state.serverBase = base;
+        state.serverToken = token;
+        state.dirHandle = null;
+        setSupportPill();
+        setServerFormUi();
+
+        let host = base;
+        try {
+          host = new URL(base).host;
+        } catch {
+          // Ignore.
+        }
+        setFolderName(`Server: ${host}`);
+        setStatus("Server connected");
+
+        if (remember) {
+          try {
+            localStorage.setItem("camfordick_server_base", base);
+            localStorage.setItem("camfordick_server_token", token);
+          } catch {
+            // Ignore.
+          }
+        }
+
+        renderLibrary();
+        await refreshLibrary({ reason: "startup", toastOnChange: false });
+        return true;
+      }
+
+      async function disconnectServer() {
+        state.mode = "auto";
+        state.serverInfo = null;
+        state.serverBase = "";
+        state.serverToken = "";
+        setSupportPill();
+        setServerFormUi();
+        setFolderName("None");
+        setStatus("Idle");
+        setError("");
+        resetLibraryState();
+
+        await tryRestoreFolderHandle();
+        renderLibrary();
+        if (state.dirHandle) {
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+        }
+      }
+
+      async function copyShareLink() {
+        const base = normalizeServerBase(el.serverUrlInput.value || state.serverBase);
+        if (!base) {
+          toast("Enter a PC Server URL first.");
+          return;
+        }
+
+        const token = String(el.serverTokenInput.value || state.serverToken || "").trim();
+        const u = new URL(window.location.href);
+        u.searchParams.set("server", base);
+        if (token) u.searchParams.set("token", token);
+        else u.searchParams.delete("token");
+
+        try {
+          await navigator.clipboard.writeText(u.toString());
+          toast("Share link copied.");
+        } catch {
+          // Fallback (still shows the text to copy).
+          window.prompt("Copy this link:", u.toString());
+        }
+      }
+
+      async function scanDirectoryRecursive(dirHandle) {
+        /** @type {LocalVideoEntry[]} */
+        const out = [];
+
+        async function walk(dh, prefix) {
+          for await (const entry of dh.values()) {
+            if (entry.kind === "directory") {
+              await walk(entry, `${prefix}${entry.name}/`);
+              continue;
+            }
+
+            const name = entry.name || "";
+            const dot = name.lastIndexOf(".");
+            const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase() : "";
+            if (!VIDEO_EXTS.has(ext)) continue;
+            out.push({ source: "local", path: `${prefix}${name}`, name, ext, handle: entry });
+          }
+        }
+
+        await walk(dirHandle, "");
+        out.sort((a, b) => a.path.localeCompare(b.path));
+        return out;
+      }
+
+      function encodePathForUrl(relPath) {
+        // Encode each segment so subfolders work and slashes remain slashes.
+        return String(relPath)
+          .split("/")
+          .map((s) => encodeURIComponent(s))
+          .join("/");
+      }
+
+      function normalizeServerBase(raw) {
+        let s = String(raw || "").trim();
+        if (!s) return "";
+        if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+        try {
+          const u = new URL(s);
+          return u.origin;
+        } catch {
+          return "";
+        }
+      }
+
+      function buildServerUrl(pathname) {
+        const base = state.serverBase || window.location.origin;
+        const u = new URL(pathname, base);
+        if (state.serverToken) u.searchParams.set("token", state.serverToken);
+        return u.toString();
+      }
+
+      function serverMediaUrl(relPath) {
+        return buildServerUrl(`/media/${encodePathForUrl(relPath)}`);
+      }
+
+      async function detectServerInfoAt(base) {
+        try {
+          const u = new URL("/api/info", base);
+          const r = await fetch(u.toString(), { cache: "no-store" });
+          if (!r.ok) return null;
+          const j = await r.json();
+          if (!j || !j.ok || j.mode !== "server") return null;
+          return j;
+        } catch {
+          return null;
+        }
+      }
+
+      async function fetchServerVideos() {
+        const r = await fetch(buildServerUrl("/api/videos"), { cache: "no-store" });
+        if (!r.ok) throw new Error(`Server error (${r.status})`);
+        const j = await r.json();
+        if (!j || !j.ok || !Array.isArray(j.videos)) throw new Error("Bad server response");
+        /** @type {ServerVideoEntry[]} */
+        const list = j.videos.map((v) => ({
+          source: "server",
+          path: String(v.path || ""),
+          name: String(v.name || ""),
+          ext: String(v.ext || "").toLowerCase(),
+          size: typeof v.size === "number" ? v.size : undefined,
+          mtimeMs: typeof v.mtimeMs === "number" ? v.mtimeMs : undefined,
+        }));
+        list.sort((a, b) => a.path.localeCompare(b.path));
+        return list;
+      }
+
+      function ensureThumbObserver() {
+        if (state.thumbObserver) return;
+        state.thumbObserver = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (!e.isIntersecting) continue;
+              const vid = e.target;
+              const path = vid.dataset.path;
+              const entry = state.byPath.get(path);
+              if (!entry) {
+                state.thumbObserver.unobserve(vid);
+                continue;
+              }
+
+              loadThumb(vid, entry).finally(() => state.thumbObserver.unobserve(vid));
+            }
+          },
+          { root: null, rootMargin: "260px", threshold: 0.01 }
+        );
+      }
+
+      async function getLocalObjectUrl(entry) {
+        const cached = state.urlCache.get(entry.path);
+        if (cached) return cached;
+        const file = await entry.handle.getFile();
+        const url = URL.createObjectURL(file);
+        state.urlCache.set(entry.path, url);
+        return url;
+      }
+
+      async function getPlayableUrl(entry) {
+        if (entry.source === "server") return serverMediaUrl(entry.path);
+        return getLocalObjectUrl(entry);
+      }
+
+      async function loadThumb(videoEl, entry) {
+        try {
+          const url = await getPlayableUrl(entry);
+          videoEl.src = url;
+          videoEl.load();
+
+          videoEl.addEventListener(
+            "loadedmetadata",
+            () => {
+              try {
+                // Seek slightly to encourage a non-black preview frame.
+                const t = Math.min(0.12, Math.max(0, (videoEl.duration || 0) * 0.1));
+                videoEl.currentTime = t;
+              } catch {
+                // Ignore.
+              }
+            },
+            { once: true }
+          );
+
+          videoEl.addEventListener(
+            "seeked",
+            () => {
+              try {
+                videoEl.pause();
+              } catch {
+                // Ignore.
+              }
+            },
+            { once: true }
+          );
+        } catch {
+          // Leave as-is (fallback stays visible underneath via background).
+        }
+      }
+
+      function clearRemovedUrls(newByPath) {
+        for (const [path, url] of state.urlCache.entries()) {
+          if (newByPath.has(path)) continue;
+          try {
+            URL.revokeObjectURL(url);
+          } catch {
+            // Ignore.
+          }
+          state.urlCache.delete(path);
+        }
+      }
+
+      function renderLibrary() {
+        if (state.thumbObserver) state.thumbObserver.disconnect();
+        el.grid.innerHTML = "";
+        el.videoCount.textContent = String(state.videos.length);
+
+        if (state.mode !== "server" && !state.dirHandle) {
+          el.emptyHint.textContent = "No local folder handle yet. Click Select Video Folder.";
+          el.emptyState.classList.remove("hidden");
+          return;
+        }
+
+        if (state.videos.length === 0) {
+          el.emptyHint.textContent =
+            state.mode === "server"
+              ? "Server is reachable, but no matching video files were found."
+              : "Folder is accessible, but no matching video files were found.";
+          el.emptyState.classList.remove("hidden");
+          return;
+        }
+
+        el.emptyState.classList.add("hidden");
+        ensureThumbObserver();
+
+        for (const v of state.videos) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.dataset.path = v.path;
+          btn.className =
+            "group relative overflow-hidden rounded-2xl border border-white/10 bg-black/25 text-left transition hover:border-white/20 hover:bg-black/35";
+          if (v.path === state.currentPath) {
+            btn.classList.add("ring-2", "ring-neonT/70");
+          }
+
+          const preview = document.createElement("div");
+          preview.className =
+            "relative aspect-video overflow-hidden bg-gradient-to-br from-neonP/10 via-black/30 to-neonT/10";
+
+          if (THUMB_PREVIEW_EXTS.has(v.ext)) {
+            const vid = document.createElement("video");
+            vid.className =
+              "h-full w-full object-cover opacity-90 transition group-hover:opacity-100";
+            vid.muted = true;
+            vid.playsInline = true;
+            vid.preload = "metadata";
+            vid.disablePictureInPicture = true;
+            vid.dataset.path = v.path;
+            vid.tabIndex = -1;
+            vid.style.pointerEvents = "none";
+            preview.appendChild(vid);
+            state.thumbObserver.observe(vid);
+          } else {
+            const fallback = document.createElement("div");
+            fallback.className =
+              "flex h-full w-full items-center justify-center font-mono text-xs tracking-[0.22em] text-zinc-200/80";
+            fallback.textContent = v.ext.toUpperCase();
+            preview.appendChild(fallback);
+          }
+
+          const playBadge = document.createElement("div");
+          playBadge.className = "pointer-events-none absolute bottom-2 right-2";
+          playBadge.innerHTML = `
+            <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 shadow-[0_0_18px_rgba(20,184,166,0.16)] backdrop-blur transition group-hover:scale-105">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="text-neonT">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </div>
+          `;
+          preview.appendChild(playBadge);
+
+          const label = document.createElement("div");
+          label.className = "px-3 py-2";
+
+          const pathEl = document.createElement("div");
+          pathEl.className = "truncate font-mono text-[11px] leading-tight text-zinc-200/90";
+          pathEl.textContent = v.path;
+          pathEl.title = v.path;
+
+          const metaEl = document.createElement("div");
+          metaEl.className = "mt-1 flex items-center gap-2 text-[10px] text-zinc-400";
+          metaEl.innerHTML = `<span class="rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono">${v.ext}</span>`;
+
+          label.appendChild(pathEl);
+          label.appendChild(metaEl);
+
+          btn.appendChild(preview);
+          btn.appendChild(label);
+
+          btn.addEventListener("click", () => loadIntoPlayer(v.path));
+          el.grid.appendChild(btn);
+        }
+      }
+
+      async function loadIntoPlayer(path) {
+        setError("");
+        const entry = state.byPath.get(path);
+        if (!entry) return;
+        state.currentPath = path;
+        el.nowPlaying.textContent = path;
+
+        try {
+          const url = await getPlayableUrl(entry);
+          el.player.src = url;
+          el.player.load();
+          renderLibrary(); // refresh highlight
+
+          if (state.streamOn) {
+            await el.player.play();
+          }
+        } catch (err) {
+          console.error(err);
+          setError("Could not load video (format/codec may be unsupported).");
+        }
+      }
+
+      function toggleStream(forceOn = null) {
+        setError("");
+        state.streamOn = forceOn === null ? !state.streamOn : !!forceOn;
+        setStreamUi();
+
+        if (!state.streamOn) {
+          try {
+            el.player.pause();
+          } catch {
+            // Ignore.
+          }
+          return;
+        }
+
+        if (!el.player.src) return;
+        el.player.play().catch(() => {
+          // Autoplay restrictions can still apply; user can hit play in controls.
+        });
+      }
+
+      async function refreshLibrary({ reason, toastOnChange }) {
+        const usingServer = state.mode === "server";
+        if (!usingServer && !state.dirHandle) {
+          renderLibrary();
+          return;
+        }
+
+        if (state.scanInProgress) return;
+        state.scanInProgress = true;
+        el.refreshBtn.disabled = true;
+        el.refreshBtn.classList.add("opacity-60");
+        el.refreshBtn.classList.add("scan-shimmer");
+        const mySeq = ++state.scanSeq;
+
+        const start = performance.now();
+        if (usingServer) {
+          setStatus(reason === "auto" ? "Auto-fetching…" : "Fetching…");
+        } else {
+          setStatus(reason === "auto" ? "Auto-scanning…" : "Scanning…");
+        }
+
+        try {
+          /** @type {VideoEntry[]} */
+          let list;
+          if (usingServer) {
+            list = await fetchServerVideos();
+          } else {
+            // Never trigger permission prompts from background/manual scans.
+            const ok = await hasReadPermission(state.dirHandle);
+            if (!ok) {
+              setStatus("Permission lost (reselect folder)");
+              toast("Folder permission lost. Click Select Video Folder.");
+              return;
+            }
+            list = await scanDirectoryRecursive(state.dirHandle);
+          }
+          if (mySeq !== state.scanSeq) return;
+
+          const newByPath = new Map(list.map((v) => [v.path, v]));
+          const prevCount = state.videos.length;
+          state.videos = list;
+          state.byPath = newByPath;
+          clearRemovedUrls(newByPath);
+
+          if (state.currentPath && !newByPath.has(state.currentPath)) {
+            state.currentPath = null;
+            el.nowPlaying.textContent = "Nothing loaded";
+            try {
+              el.player.pause();
+              el.player.removeAttribute("src");
+              el.player.load();
+            } catch {
+              // Ignore.
+            }
+          }
+
+          renderLibrary();
+
+          const ms = Math.round(performance.now() - start);
+          setStatus(`${usingServer ? "Last fetch" : "Last scan"}: ${new Date().toLocaleTimeString()} (${ms}ms)`);
+
+          if (toastOnChange) {
+            if (list.length !== prevCount) toast(`Found ${list.length} video${list.length === 1 ? "" : "s"}`);
+          }
+        } catch (err) {
+          console.error(err);
+          setStatus(usingServer ? "Fetch failed" : "Scan failed");
+          setError((err && err.message) || String(err));
+        } finally {
+          state.scanInProgress = false;
+          el.refreshBtn.disabled = false;
+          el.refreshBtn.classList.remove("opacity-60");
+          el.refreshBtn.classList.remove("scan-shimmer");
+        }
+      }
+
+      function setupPiP() {
+        const can =
+          "pictureInPictureEnabled" in document && document.pictureInPictureEnabled && typeof el.player.requestPictureInPicture === "function";
+        if (!can) {
+          el.pipBtn.disabled = true;
+          el.pipBtn.classList.add("opacity-50");
+          el.pipBtn.title = "Picture-in-Picture not supported";
+          return;
+        }
+
+        el.pipBtn.addEventListener("click", async () => {
+          setError("");
+          try {
+            if (document.pictureInPictureElement) {
+              await document.exitPictureInPicture();
+              return;
+            }
+            await el.player.requestPictureInPicture();
+          } catch (err) {
+            console.warn(err);
+            setError("PiP failed.");
+          }
+        });
+      }
+
+      function setupFullscreen() {
+        const can = !!(el.playerShell && el.playerShell.requestFullscreen);
+        if (!can) {
+          el.fsBtn.disabled = true;
+          el.fsBtn.classList.add("opacity-50");
+          el.fsBtn.title = "Fullscreen not supported";
+          return;
+        }
+
+        el.fsBtn.addEventListener("click", async () => {
+          setError("");
+          try {
+            if (document.fullscreenElement) {
+              await document.exitFullscreen();
+            } else {
+              await el.playerShell.requestFullscreen();
+            }
+          } catch (err) {
+            console.warn(err);
+            setError("Fullscreen failed.");
+          }
+        });
+      }
+
+      function setupAutoRescan() {
+        el.autoRescanLabel.textContent = `${Math.round(state.autoRescanMs / 1000)}s`;
+        setInterval(() => {
+          if (state.mode !== "server" && !state.dirHandle) return;
+          if (document.visibilityState !== "visible") return;
+          refreshLibrary({ reason: "auto", toastOnChange: false });
+        }, state.autoRescanMs);
+      }
+
+      function wireUi() {
+        el.selectFolderBtn.addEventListener("click", selectFolder);
+        el.refreshBtn.addEventListener("click", () => refreshLibrary({ reason: "manual", toastOnChange: true }));
+        el.streamToggleBtn.addEventListener("click", () => toggleStream(null));
+        el.overlayStreamOnBtn.addEventListener("click", () => toggleStream(true));
+
+        el.connectServerBtn.addEventListener("click", () =>
+          connectServer(el.serverUrlInput.value, el.serverTokenInput.value, { remember: true })
+        );
+        el.copyLinkBtn.addEventListener("click", () => copyShareLink());
+        el.disconnectServerBtn.addEventListener("click", () => disconnectServer());
+        el.serverUrlInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") connectServer(el.serverUrlInput.value, el.serverTokenInput.value, { remember: true });
+        });
+        el.serverTokenInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") connectServer(el.serverUrlInput.value, el.serverTokenInput.value, { remember: true });
+        });
+
+        el.player.addEventListener("error", () => {
+          const err = el.player.error;
+          if (!err) return;
+          setError("Playback error (format/codec may be unsupported).");
+        });
+      }
+
+      async function init() {
+        setStreamUi();
+        wireUi();
+        setupPiP();
+        setupFullscreen();
+        setupAutoRescan();
+
+        if (!navigator.storage || !navigator.storage.persist) {
+          // best effort only
+        } else {
+          navigator.storage.persist().catch(() => {});
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const qpServerRaw = params.get("server") || "";
+        const qpTokenRaw = params.get("token") || "";
+
+        let savedServerRaw = "";
+        let savedTokenRaw = "";
+        try {
+          savedServerRaw = localStorage.getItem("camfordick_server_base") || "";
+          savedTokenRaw = localStorage.getItem("camfordick_server_token") || "";
+        } catch {
+          // Ignore.
+        }
+
+        const initialServerRaw = qpServerRaw || savedServerRaw;
+        const initialTokenRaw = qpTokenRaw || savedTokenRaw;
+
+        if (initialServerRaw) el.serverUrlInput.value = initialServerRaw;
+        if (initialTokenRaw) el.serverTokenInput.value = initialTokenRaw;
+
+        // Prefer an explicitly configured server (GitHub Pages use-case).
+        if (initialServerRaw) {
+          const ok = await connectServer(initialServerRaw, initialTokenRaw, { remember: !qpServerRaw });
+          if (ok) return;
+        }
+
+        // Same-origin server (when you open http://localhost:5173/ from server.js)
+        const info = await detectServerInfoAt(window.location.origin);
+        if (info) {
+          resetLibraryState();
+          state.mode = "server";
+          state.serverInfo = info;
+          state.serverBase = "";
+          state.serverToken = String(initialTokenRaw || "").trim();
+          state.dirHandle = null;
+          setSupportPill();
+          setServerFormUi();
+          setFolderName(`Server: ${window.location.host}`);
+          setStatus("Server connected");
+          renderLibrary();
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          return;
+        }
+
+        setSupportPill();
+        setServerFormUi();
+        await tryRestoreFolderHandle();
+
+        renderLibrary();
+
+        if (state.dirHandle) {
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+        }
+      }
+
+      init().catch((err) => {
+        console.error(err);
+        setError("Init failed.");
+      });
+    </script>
+  </body>
+</html>
