@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Camfordick</title>
+    <!-- Optional: if hosting this UI separately (Worker/Pages), set this to your server base (HTTPS). -->
+    <meta name="camfordick:server" content="" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -93,7 +95,7 @@
 	  <body class="min-h-screen text-zinc-100 antialiased">
 		    <button
 		      id="cornerAdminBtn"
-		      class="hidden neon-btn fixed right-4 top-4 z-50 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-display text-xs font-semibold tracking-wide text-white/90 backdrop-blur transition will-change-transform"
+		      class="neon-btn fixed right-4 top-4 z-50 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-display text-xs font-semibold tracking-wide text-white/90 backdrop-blur transition will-change-transform"
 		      type="button"
 		      title="Admin / Settings"
 		    >
@@ -762,7 +764,11 @@
         const role = me ? String(me.role || "") : "";
         const isAdmin = role === "admin";
 
-        el.cornerAdminBtn.classList.toggle("hidden", !isAdmin);
+        // Always show the corner button so admins can find it on the landing page.
+        // If the current user isn't admin, clicking it will show a hint instead of opening panels.
+        el.cornerAdminBtn.classList.remove("hidden");
+        el.cornerAdminBtn.classList.toggle("opacity-60", !isAdmin);
+        el.cornerAdminBtn.title = isAdmin ? "Admin / Settings" : "Admin (sign in as admin to unlock)";
         if (!isAdmin) state.cornerOpen = false;
         const signupEnabled =
           !usingServer ||
@@ -1152,9 +1158,52 @@
 
       async function ensureConnectedServer() {
         if (state.mode === "server") return true;
-        const origin = window.location.origin;
-        const info = await detectServerInfoAt(origin);
-        if (info) return connectServer(origin, "", { remember: false, info });
+
+        /** @type {string[]} */
+        const candidates = [];
+        try {
+          const u = new URL(window.location.href);
+          const sp = u.searchParams.get("server");
+          if (sp) candidates.push(sp);
+        } catch {
+          // Ignore.
+        }
+        candidates.push(window.location.origin);
+
+        // Optional operator-configured default server base.
+        try {
+          const meta = document.querySelector('meta[name="camfordick:server"]');
+          const v = meta && meta.getAttribute("content") ? String(meta.getAttribute("content") || "").trim() : "";
+          if (v) candidates.push(v);
+        } catch {
+          // Ignore.
+        }
+
+        // Fallback to last-used server if present.
+        try {
+          const base = localStorage.getItem("camfordick_server_base") || "";
+          if (base) candidates.push(base);
+        } catch {
+          // Ignore.
+        }
+
+        // Best-effort legacy token (optional).
+        let legacyToken = "";
+        try {
+          legacyToken = localStorage.getItem("camfordick_server_token") || "";
+        } catch {
+          // Ignore.
+        }
+
+        const seen = new Set();
+        for (const raw of candidates) {
+          const base = normalizeServerBase(raw);
+          if (!base || seen.has(base)) continue;
+          seen.add(base);
+          const info = await detectServerInfoAt(base);
+          if (info) return connectServer(base, legacyToken, { remember: false, info });
+        }
+
         setStatus("Server offline");
         setError("Server is offline.");
         toast("Server is offline.");
@@ -2122,6 +2171,16 @@
 
         // Event listeners
         el.cornerAdminBtn.addEventListener("click", () => {
+          const role = state.me ? String(state.me.role || "") : "";
+          if (role !== "admin") {
+            toast("Sign in as admin to open the admin panel.");
+            try {
+              el.authUserInput.focus();
+            } catch {
+              // Ignore.
+            }
+            return;
+          }
           state.cornerOpen = !state.cornerOpen;
           setAuthUi();
         });
@@ -2213,6 +2272,18 @@
             attemptedServer = true;
             connectServer(window.location.origin, "", { remember: false, info: originInfo });
           } else {
+            // Optional operator-configured default server base.
+            try {
+              const meta = document.querySelector('meta[name="camfordick:server"]');
+              const v = meta && meta.getAttribute("content") ? String(meta.getAttribute("content") || "").trim() : "";
+              if (v) {
+                attemptedServer = true;
+                connectServer(v, "", { remember: false });
+              }
+            } catch {
+              // Ignore.
+            }
+
             // Try to restore last used server
             try {
               const base = localStorage.getItem("camfordick_server_base") || "";
