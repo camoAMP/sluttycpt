@@ -32,6 +32,14 @@ node server.js
 
 The server prints local URLs. For remote viewers you need an HTTPS public URL (next section).
 
+## One Command (Server + Tunnel)
+
+If you already created a named tunnel `camodick` in Cloudflare, you can start everything with:
+
+```bash
+bash scripts/run-public.sh
+```
+
 ## Use Your Own Domain (Cloudflare Tunnel)
 
 If you want users to simply open your domain with no server setup UI:
