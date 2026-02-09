@@ -105,12 +105,24 @@
                 >
               </h1>
               <p class="text-xs text-zinc-300/90">
-                Local folder (File System Access API + IndexedDB) or PC server feed (no uploads)
+                Private video gallery. Sign in to watch.
               </p>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            <a
+              id="homeLink"
+              href="/"
+              class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90 transition hover:bg-black/40"
+              >Home</a
+            >
+            <a
+              id="adminLink"
+              href="/admin"
+              class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90 transition hover:bg-black/40"
+              >Admin</a
+            >
             <span
               id="supportPill"
               class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
@@ -119,7 +131,7 @@
           </div>
         </div>
 
-	        <div class="mt-4 flex flex-wrap items-center gap-2">
+	        <div id="folderControlsRow" class="mt-4 flex flex-wrap items-center gap-2">
 	          <button
 	            id="selectFolderBtn"
             class="neon-btn rounded-xl bg-gradient-to-r from-neonP/70 to-neonX/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
@@ -163,7 +175,7 @@
 	          </button>
 	        </div>
 
-	        <div class="mt-3 flex flex-wrap items-end gap-2">
+	        <div id="serverConnectRow" class="mt-3 flex flex-wrap items-end gap-2">
 	          <div class="min-w-[260px] flex-1">
 	            <label for="serverUrlInput" class="block text-[11px] text-zinc-400">PC Server URL (HTTPS)</label>
 	            <input
@@ -275,6 +287,8 @@
               >
             </div>
           </div>
+
+          <div id="authErrorText" class="mt-2 font-mono text-xs text-rose-400"></div>
 
           <div
             id="adminPanel"
@@ -430,7 +444,7 @@
             </div>
           </div>
 
-	        <div class="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
+	        <div id="statusGrid" class="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
 	          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
 	            <div class="text-zinc-400">Folder</div>
 	            <div id="folderName" class="mt-0.5 truncate font-mono text-zinc-100">None</div>
@@ -455,7 +469,7 @@
         </div>
       </header>
 
-      <main class="mt-7 flex flex-col items-center gap-7">
+      <main id="mainContent" class="mt-7 flex flex-col items-center gap-7">
         <section class="w-[92vw] max-w-[1200px] md:w-[70vw]">
           <div class="rounded-2xl border border-white/10 bg-black/30 glow-panel">
             <div id="playerShell" class="relative overflow-hidden rounded-2xl">
@@ -531,7 +545,7 @@
             </div>
           </div>
 
-          <div id="grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"></div>
+          <div id="grid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
 
           <div
             id="emptyState"
@@ -547,6 +561,37 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <div
+      id="ageGate"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 px-4 py-10 text-zinc-100 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ageGateTitle"
+    >
+      <div class="w-full max-w-md rounded-2xl border border-white/10 bg-panel/70 p-6 glow-panel">
+        <div class="font-display text-lg font-semibold tracking-wide" id="ageGateTitle">18+ Only</div>
+        <div class="mt-2 text-sm text-zinc-300/90">
+          This site contains adult content. Are you 18 or older?
+        </div>
+        <div class="mt-5 flex flex-wrap gap-2">
+          <button
+            id="ageYesBtn"
+            type="button"
+            class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+          >
+            Yes, I am 18+
+          </button>
+          <button
+            id="ageNoBtn"
+            type="button"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+          >
+            No
+          </button>
+        </div>
+      </div>
     </div>
 
     <div
@@ -568,6 +613,7 @@
 
       const state = {
         mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
+        embeddedServer: false,
         serverInfo: null, // from /api/info
         serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
         serverToken: "",
@@ -593,6 +639,15 @@
 
       const el = {
         supportPill: document.getElementById("supportPill"),
+        adminLink: document.getElementById("adminLink"),
+        homeLink: document.getElementById("homeLink"),
+        folderControlsRow: document.getElementById("folderControlsRow"),
+        serverConnectRow: document.getElementById("serverConnectRow"),
+        statusGrid: document.getElementById("statusGrid"),
+        mainContent: document.getElementById("mainContent"),
+        ageGate: document.getElementById("ageGate"),
+        ageYesBtn: document.getElementById("ageYesBtn"),
+        ageNoBtn: document.getElementById("ageNoBtn"),
         selectFolderBtn: document.getElementById("selectFolderBtn"),
         refreshBtn: document.getElementById("refreshBtn"),
         streamToggleBtn: document.getElementById("streamToggleBtn"),
@@ -609,6 +664,7 @@
         signUpBtn: document.getElementById("signUpBtn"),
         signOutBtn: document.getElementById("signOutBtn"),
         authPill: document.getElementById("authPill"),
+        authErrorText: document.getElementById("authErrorText"),
         creditsPill: document.getElementById("creditsPill"),
         creditsText: document.getElementById("creditsText"),
         adminPanel: document.getElementById("adminPanel"),
@@ -652,6 +708,9 @@
         toast: document.getElementById("toast"),
         autoRescanLabel: document.getElementById("autoRescanLabel"),
       };
+
+      const IS_ADMIN_ROUTE =
+        window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin/");
 
       const idb = (() => {
         const DB_NAME = "camfordick-db";
@@ -722,7 +781,12 @@
       }
 
       function setError(msg) {
-        el.errorText.textContent = msg || "";
+        const m = msg || "";
+        el.errorText.textContent = m;
+        if (el.authErrorText) {
+          const showAuth = state.embeddedServer && state.mode === "server" && !state.me && !state.serverToken;
+          el.authErrorText.textContent = showAuth ? m : "";
+        }
       }
 
       function setFolderName(msg) {
@@ -741,6 +805,29 @@
         el.adminMsg.textContent = msg || "";
       }
 
+      function setMainUi() {
+        if (!el.mainContent) return;
+
+        // On the embedded server UI (same-origin), only show content after auth (or legacy token).
+        if (state.embeddedServer) {
+          const show = state.mode === "server" && (!!state.me || !!state.serverToken);
+          el.mainContent.classList.toggle("hidden", !show);
+          return;
+        }
+
+        // For the generic/local UI, keep the main content visible.
+        el.mainContent.classList.remove("hidden");
+      }
+
+      function setEmbeddedServerUi(on) {
+        state.embeddedServer = !!on;
+        const hideSetup = !!on;
+        if (el.folderControlsRow) el.folderControlsRow.classList.toggle("hidden", hideSetup);
+        if (el.serverConnectRow) el.serverConnectRow.classList.toggle("hidden", hideSetup);
+        if (el.statusGrid) el.statusGrid.classList.toggle("hidden", hideSetup);
+        setMainUi();
+      }
+
       function setAuthUi() {
         const usingServer = state.mode === "server";
         const me = state.me;
@@ -754,6 +841,7 @@
           el.adminPanel.classList.add("hidden");
           el.contentTokensPanel.classList.add("hidden");
           setAdminMsg("");
+          setMainUi();
           return;
         }
 
@@ -766,6 +854,7 @@
           el.adminPanel.classList.add("hidden");
           el.contentTokensPanel.classList.add("hidden");
           setAdminMsg("");
+          setMainUi();
           return;
         }
 
@@ -786,8 +875,10 @@
         }
 
         const isAdmin = role === "admin";
-        el.adminPanel.classList.toggle("hidden", !isAdmin);
-        el.contentTokensPanel.classList.toggle("hidden", !isAdmin);
+        const showAdmin = isAdmin && IS_ADMIN_ROUTE;
+        el.adminPanel.classList.toggle("hidden", !showAdmin);
+        el.contentTokensPanel.classList.toggle("hidden", !showAdmin);
+        setMainUi();
       }
 
       function setPlayerActions(entry) {
@@ -1162,6 +1253,10 @@
         const password = String(el.authPassInput.value || "");
         if (!username || !password) {
           setError("Enter username + password.");
+          return;
+        }
+        if (password.length < 8) {
+          setError("Password must be at least 8 characters.");
           return;
         }
 
@@ -2069,6 +2164,47 @@
         setStreamUi();
         renderLibrary();
 
+        // Admin/Home link toggles based on route.
+        if (el.adminLink && el.homeLink) {
+          el.homeLink.classList.toggle("hidden", !IS_ADMIN_ROUTE);
+          el.adminLink.classList.toggle("hidden", IS_ADMIN_ROUTE);
+        }
+
+        // 18+ gate (stored per-browser).
+        try {
+          const ok = localStorage.getItem("camfordick_age_ok") === "1";
+          if (!ok && el.ageGate) {
+            el.ageGate.classList.remove("hidden");
+            el.ageGate.classList.add("flex");
+          }
+        } catch {
+          if (el.ageGate) {
+            el.ageGate.classList.remove("hidden");
+            el.ageGate.classList.add("flex");
+          }
+        }
+        if (el.ageYesBtn && el.ageGate) {
+          el.ageYesBtn.addEventListener("click", () => {
+            try {
+              localStorage.setItem("camfordick_age_ok", "1");
+            } catch {
+              // Ignore.
+            }
+            el.ageGate.classList.add("hidden");
+            el.ageGate.classList.remove("flex");
+          });
+        }
+        if (el.ageNoBtn && el.ageGate) {
+          el.ageNoBtn.addEventListener("click", () => {
+            el.ageGate.innerHTML = `
+              <div class="w-full max-w-md rounded-2xl border border-white/10 bg-panel/70 p-6 glow-panel">
+                <div class="font-display text-lg font-semibold tracking-wide">Access denied</div>
+                <div class="mt-2 text-sm text-zinc-300/90">You must be 18 or older to use this site.</div>
+              </div>
+            `;
+          });
+        }
+
         // Event listeners
         el.selectFolderBtn.addEventListener("click", selectFolder);
         el.refreshBtn.addEventListener("click", () => refreshLibrary({ reason: "manual", toastOnChange: true }));
@@ -2150,17 +2286,34 @@
           connectServer(serverParam, tokenParam || "", { remember: false });
         } else {
           // Try to restore last used server
+          let restored = false;
           try {
             const base = localStorage.getItem("camfordick_server_base") || "";
             const token = localStorage.getItem("camfordick_server_token") || "";
-            if (base) connectServer(base, token, { remember: false });
+            if (base) {
+              restored = true;
+              connectServer(base, token, { remember: false });
+            }
           } catch {
             // Ignore.
           }
+
+          // If we're being served by the same-origin PC server, auto-connect and hide setup UI.
+          if (!restored) {
+            const selfBase = window.location.origin;
+            const info = await detectServerInfoAt(selfBase);
+            if (info) {
+              setEmbeddedServerUi(true);
+              // Don't await; keep UI responsive.
+              connectServer(selfBase, "", { remember: false });
+            }
+          }
         }
 
-        // Try to restore folder handle
-        tryRestoreFolderHandle();
+        // Try to restore folder handle only when not embedded in server mode.
+        if (!state.embeddedServer) {
+          tryRestoreFolderHandle();
+        }
       })();
     </script>
   </body>

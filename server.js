@@ -728,7 +728,11 @@ const server = http.createServer(async (req, res) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     if (req.method === "OPTIONS") return res.end();
 
-    if (pathname === "/" || pathname === "/index.html") return serveIndex(req, res);
+    // Serve the SPA shell for the root and the admin route.
+    // The client-side code uses location.pathname to toggle admin UI.
+    if (pathname === "/" || pathname === "/index.html" || pathname === "/admin" || pathname.startsWith("/admin/")) {
+      return serveIndex(req, res);
+    }
 
     if (pathname === "/api/info") {
       return json(res, 200, {

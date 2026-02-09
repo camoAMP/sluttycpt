@@ -97,7 +97,16 @@ if [[ -z "${CLOUDFLARED}" ]]; then
   CLOUDFLARED="$(command -v cloudflared || true)"
 fi
 
-if [[ -n "${CLOUDFLARED}" ]]; then
+SKIP_TUNNEL=0
+# If the user has already installed and enabled cloudflared via systemd, don't start a second tunnel.
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl is-active --quiet cloudflared.service 2>/dev/null; then
+    echo "[camodick] cloudflared.service already running (systemd); skipping tunnel start."
+    SKIP_TUNNEL=1
+  fi
+fi
+
+if [[ "${SKIP_TUNNEL}" == "0" && -n "${CLOUDFLARED}" ]]; then
   if [[ -n "${TUNNEL_TOKEN_FILE}" ]]; then
     if [[ -n "${TUNNEL_TOKEN}" ]]; then
       # 0600 token file (best-effort) so the secret isn't exposed via process args.
@@ -131,7 +140,7 @@ if [[ -n "${CLOUDFLARED}" ]]; then
       STARTED_TUNNEL=1
     fi
   fi
-else
+elif [[ "${SKIP_TUNNEL}" == "0" ]]; then
   echo "[camodick] cloudflared not found; tunnel not started (LAN-only)." >&2
 fi
 
