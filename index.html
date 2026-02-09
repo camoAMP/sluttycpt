@@ -1220,7 +1220,11 @@
         }
 
         const u = new URL(window.location.href);
-        u.searchParams.set("server", base);
+        // If the UI is served by the same origin as the server, don't generate a confusing ?server=... link.
+        // This also avoids accidentally sending credentials to a different server if someone edits the URL.
+        const originBase = normalizeServerBase(window.location.origin);
+        if (originBase && base === originBase) u.searchParams.delete("server");
+        else u.searchParams.set("server", base);
         u.searchParams.delete("token");
         u.searchParams.delete("contentToken");
         u.searchParams.delete("auth");
@@ -1237,6 +1241,22 @@
       async function ensureConnectedServer() {
         if (state.mode === "server") return true;
 
+        // Best-effort legacy token (optional).
+        let legacyToken = "";
+        try {
+          legacyToken = localStorage.getItem("camfordick_server_token") || "";
+        } catch {
+          // Ignore.
+        }
+
+        // Always prefer same-origin server if it exists. This prevents leaking credentials to a ?server=...
+        // parameter and avoids "wrong server" login confusion when old share links are used.
+        const originBase = normalizeServerBase(window.location.origin);
+        if (originBase) {
+          const originInfo = await detectServerInfoAt(originBase);
+          if (originInfo) return connectServer(originBase, legacyToken, { remember: false, info: originInfo });
+        }
+
         /** @type {string[]} */
         const candidates = [];
         try {
@@ -1246,7 +1266,6 @@
         } catch {
           // Ignore.
         }
-        candidates.push(window.location.origin);
 
         // Optional operator-configured default server base.
         try {
@@ -1261,14 +1280,6 @@
         try {
           const base = localStorage.getItem("camfordick_server_base") || "";
           if (base) candidates.push(base);
-        } catch {
-          // Ignore.
-        }
-
-        // Best-effort legacy token (optional).
-        let legacyToken = "";
-        try {
-          legacyToken = localStorage.getItem("camfordick_server_token") || "";
         } catch {
           // Ignore.
         }
@@ -1318,7 +1329,8 @@
         } catch (err) {
           console.error(err);
           setStatus("Sign in failed");
-          setError((err && err.message) || String(err));
+          const msg = (err && err.message) || String(err);
+          setError(msg === "invalid_credentials" ? "Invalid username or password." : msg);
         }
       }
 
