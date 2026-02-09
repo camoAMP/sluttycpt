@@ -337,6 +337,35 @@
               >
                 Set Quota
               </button>
+              <div class="w-[160px]">
+                <label for="adminSpentInput" class="block text-[11px] text-zinc-400">Spent (ZAR)</label>
+                <input
+                  id="adminSpentInput"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
+                  placeholder="0"
+                />
+              </div>
+              <div class="w-[160px]">
+                <label for="adminPointsInput" class="block text-[11px] text-zinc-400">Points</label>
+                <input
+                  id="adminPointsInput"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
+                  placeholder="0"
+                />
+              </div>
+              <button
+                id="adminSetLoyaltyBtn"
+                class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+                type="button"
+              >
+                Set Loyalty
+              </button>
               <button
                 id="adminRefreshUsersBtn"
                 class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
@@ -755,6 +784,9 @@
         adminUserSelect: document.getElementById("adminUserSelect"),
         adminQuotaInput: document.getElementById("adminQuotaInput"),
         adminSetQuotaBtn: document.getElementById("adminSetQuotaBtn"),
+        adminSpentInput: document.getElementById("adminSpentInput"),
+        adminPointsInput: document.getElementById("adminPointsInput"),
+        adminSetLoyaltyBtn: document.getElementById("adminSetLoyaltyBtn"),
         adminRefreshUsersBtn: document.getElementById("adminRefreshUsersBtn"),
         adminMsg: document.getElementById("adminMsg"),
         tokenNameInput: document.getElementById("tokenNameInput"),
@@ -1567,6 +1599,20 @@
         setStatus("Signed out");
       }
 
+      function getSelectedAdminUser() {
+        const username = String(el.adminUserSelect.value || "").trim();
+        if (!username) return null;
+        return state.adminUsers.find((u) => String(u && u.username) === username) || null;
+      }
+
+      function syncAdminInputsFromSelectedUser() {
+        const u = getSelectedAdminUser();
+        if (!u) return;
+        if (el.adminQuotaInput) el.adminQuotaInput.value = String(typeof u.quota === "number" ? u.quota : 0);
+        if (el.adminSpentInput) el.adminSpentInput.value = String(typeof u.spentZar === "number" ? u.spentZar : 0);
+        if (el.adminPointsInput) el.adminPointsInput.value = String(typeof u.points === "number" ? u.points : 0);
+      }
+
       async function refreshAdminUsers() {
         if (!state.me || String(state.me.role) !== "admin") {
           state.adminUsers = [];
@@ -1578,15 +1624,19 @@
           const j = await apiJson("/api/admin/users");
           const users = Array.isArray(j.users) ? j.users : [];
           state.adminUsers = users;
+          const prev = String(el.adminUserSelect.value || "");
           el.adminUserSelect.innerHTML = "";
           for (const u of users) {
             const opt = document.createElement("option");
             opt.value = String(u.username || "");
-            opt.textContent = `${String(u.username || "")} (${String(u.unlockedCount || 0)}/${String(u.quota || 0)})`;
+            const tierName = u.tier && u.tier.name ? String(u.tier.name) : "";
+            opt.textContent = `${String(u.username || "")} (${String(u.unlockedCount || 0)}/${String(u.quota || 0)}) • R${String(u.spentZar || 0)} • ${String(u.points || 0)} pts${tierName ? ` • ${tierName}` : ""}`;
             // Don't allow selecting admin accounts for quota changes.
             if (String(u.role) === "admin") opt.disabled = true;
             el.adminUserSelect.appendChild(opt);
           }
+          if (prev) el.adminUserSelect.value = prev;
+          syncAdminInputsFromSelectedUser();
           setAdminMsg(`Loaded ${users.length} user${users.length === 1 ? "" : "s"}.`);
         } catch (err) {
           console.error(err);
@@ -1606,6 +1656,37 @@
         setAdminMsg("Saving…");
         try {
           await apiJson("/api/admin/set-quota", { method: "POST", body: { username, quota } });
+          setAdminMsg("Saved.");
+          await refreshAdminUsers();
+        } catch (err) {
+          console.error(err);
+          setAdminMsg(`Failed: ${(err && err.message) || String(err)}`);
+        }
+      }
+
+      async function adminSetLoyalty() {
+        setError("");
+        if (!state.me || String(state.me.role) !== "admin") return;
+        const username = String(el.adminUserSelect.value || "").trim();
+        if (!username) {
+          setAdminMsg("Pick a user.");
+          return;
+        }
+
+        const spentRaw = String(el.adminSpentInput.value || "").trim();
+        const pointsRaw = String(el.adminPointsInput.value || "").trim();
+        /** @type {{username:string, spentZar?:number, points?:number}} */
+        const body = { username };
+        if (spentRaw !== "") body.spentZar = Math.max(0, Math.floor(Number(spentRaw)));
+        if (pointsRaw !== "") body.points = Math.max(0, Math.floor(Number(pointsRaw)));
+        if (body.spentZar === undefined && body.points === undefined) {
+          setAdminMsg("Enter spent and/or points.");
+          return;
+        }
+
+        setAdminMsg("Saving loyalty…");
+        try {
+          await apiJson("/api/admin/set-loyalty", { method: "POST", body });
           setAdminMsg("Saved.");
           await refreshAdminUsers();
         } catch (err) {
@@ -2575,7 +2656,9 @@
         el.signUpBtn.addEventListener("click", signUp);
         el.useTokenBtn.addEventListener("click", useToken);
         el.signOutBtn.addEventListener("click", signOut);
+        el.adminUserSelect.addEventListener("change", syncAdminInputsFromSelectedUser);
         el.adminSetQuotaBtn.addEventListener("click", adminSetQuota);
+        el.adminSetLoyaltyBtn.addEventListener("click", adminSetLoyalty);
         el.adminRefreshUsersBtn.addEventListener("click", refreshAdminUsers);
         el.createTokenBtn.addEventListener("click", createContentToken);
         el.refreshTokensBtn.addEventListener("click", refreshContentTokens);
