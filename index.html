@@ -137,7 +137,53 @@
           </div>
         </div>
       </div>
-	    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
+
+      <!-- Username setup (after email verification). -->
+      <div
+        id="usernameGate"
+        class="hidden fixed inset-0 z-[65] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="usernameGateTitle"
+      >
+        <div class="w-full max-w-md rounded-2xl border border-white/10 bg-panel/80 p-6 glow-panel">
+          <div id="usernameGateTitle" class="font-display text-xl font-bold tracking-tight text-white/95">Choose a Username</div>
+          <div class="mt-2 text-sm text-zinc-300/90">
+            Pick a username for chat and admin controls.
+          </div>
+
+          <div class="mt-4">
+            <label for="usernameGateInput" class="block text-[11px] text-zinc-400">Username</label>
+            <input
+              id="usernameGateInput"
+              class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+              placeholder="yourname"
+              autocomplete="username"
+              inputmode="text"
+            />
+            <div class="mt-1 font-mono text-[11px] text-zinc-400">3-32 chars: letters, numbers, <span class="font-mono">._-</span></div>
+          </div>
+
+          <div id="usernameGateMsg" class="mt-3 font-mono text-xs text-rose-400"></div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              id="usernameGateSaveBtn"
+              type="button"
+              class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
+            >
+              Save
+            </button>
+            <button
+              id="usernameGateSignOutBtn"
+              type="button"
+              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+		    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
 	      <header class="rounded-2xl border border-white/10 bg-panel/60 p-5 glow-panel">
 	        <div id="brandRow" class="hidden flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
@@ -677,16 +723,18 @@
        * @typedef {LocalVideoEntry | ServerVideoEntry} VideoEntry
        */
 
-	      const state = {
-	        mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
-	        view: /** @type {"landing" | "gallery"} */ ("landing"),
-	        adminRoute: false,
-	        ageOk: false,
-	        cornerOpen: false,
-	        serverInfo: null, // from /api/info
-	        serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
-	        serverToken: "",
-	        contentToken: "",
+		      const state = {
+		        mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
+		        view: /** @type {"landing" | "gallery"} */ ("landing"),
+		        adminRoute: false,
+		        ageOk: false,
+            needsUsernameSetup: false,
+            postVerifySetup: false,
+		        cornerOpen: false,
+		        serverInfo: null, // from /api/info
+		        serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
+		        serverToken: "",
+		        contentToken: "",
 	        authToken: "",
 	        me: null, // from /api/me or /api/videos summary
 	        dirHandle: null,
@@ -719,16 +767,21 @@
           adminChatTimer: null,
 	      };
 
-      const el = {
-        cornerAdminBtn: document.getElementById("cornerAdminBtn"),
-        ageGate: document.getElementById("ageGate"),
-        ageGateMsg: document.getElementById("ageGateMsg"),
-        ageYesBtn: document.getElementById("ageYesBtn"),
-        ageNoBtn: document.getElementById("ageNoBtn"),
-        brandRow: document.getElementById("brandRow"),
-        folderControlsRow: document.getElementById("folderControlsRow"),
-        serverConnectRow: document.getElementById("serverConnectRow"),
-        statsRow: document.getElementById("statsRow"),
+	      const el = {
+	        cornerAdminBtn: document.getElementById("cornerAdminBtn"),
+	        ageGate: document.getElementById("ageGate"),
+	        ageGateMsg: document.getElementById("ageGateMsg"),
+	        ageYesBtn: document.getElementById("ageYesBtn"),
+	        ageNoBtn: document.getElementById("ageNoBtn"),
+          usernameGate: document.getElementById("usernameGate"),
+          usernameGateInput: document.getElementById("usernameGateInput"),
+          usernameGateSaveBtn: document.getElementById("usernameGateSaveBtn"),
+          usernameGateSignOutBtn: document.getElementById("usernameGateSignOutBtn"),
+          usernameGateMsg: document.getElementById("usernameGateMsg"),
+	        brandRow: document.getElementById("brandRow"),
+	        folderControlsRow: document.getElementById("folderControlsRow"),
+	        serverConnectRow: document.getElementById("serverConnectRow"),
+	        statsRow: document.getElementById("statsRow"),
         mainContent: document.getElementById("mainContent"),
         playerSection: document.getElementById("playerSection"),
 	        authUserWrap: document.getElementById("authUserWrap"),
@@ -1022,6 +1075,60 @@
         setAgeGateUi();
         toast("18+ confirmation required.");
         return false;
+      }
+
+      function setUsernameGateMsg(msg) {
+        if (!el.usernameGateMsg) return;
+        el.usernameGateMsg.textContent = msg || "";
+      }
+
+      function setUsernameGateUi() {
+        if (!el.usernameGate) return;
+        const show = !!state.needsUsernameSetup;
+        el.usernameGate.classList.toggle("hidden", !show);
+        if (!show) return;
+        try {
+          el.usernameGateInput.focus();
+        } catch {
+          // Ignore.
+        }
+      }
+
+      function openUsernameGate(msg) {
+        state.needsUsernameSetup = true;
+        setUsernameGateMsg(msg || "");
+        setUsernameGateUi();
+      }
+
+      function closeUsernameGate() {
+        state.needsUsernameSetup = false;
+        setUsernameGateMsg("");
+        setUsernameGateUi();
+      }
+
+      async function saveUsernameFromGate() {
+        setUsernameGateMsg("");
+        const username = String((el.usernameGateInput && el.usernameGateInput.value) || "").trim();
+        if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
+          setUsernameGateMsg("Use 3-32 chars: letters, numbers, . _ -");
+          return;
+        }
+        try {
+          setUsernameGateMsg("Saving…");
+          const j = await apiJson("/api/me/username", { method: "POST", body: { username } });
+          if (j && j.user && state.me) {
+            state.me.username = String(j.user.username || username);
+            state.me.needsUsername = !!j.user.needsUsername;
+          }
+          closeUsernameGate();
+          setStatus("Username saved");
+          setAuthUi();
+          renderLibrary();
+        } catch (err) {
+          console.error(err);
+          const msg = (err && err.message) || String(err);
+          setUsernameGateMsg(msg === "username_taken" ? "Username already taken." : msg === "bad_username" ? "Invalid username." : msg);
+        }
       }
 
       function hasGalleryAccess() {
@@ -1591,17 +1698,19 @@
 	          renderLibrary();
 	          await refreshLibrary({ reason: "startup", toastOnChange: false });
 	          setStatus("Signed in");
-		        } catch (err) {
-		          console.error(err);
-		          setStatus("Sign in failed");
-		          const msg = (err && err.message) || String(err);
-		          setError(
-                msg === "invalid_credentials"
-                  ? "Invalid email/username or password."
-                  : msg === "bad_request"
-                    ? "Check your email/username and use a password with 8+ characters."
-                    : msg === "account_disabled"
-                      ? "Account disabled."
+			        } catch (err) {
+			          console.error(err);
+			          setStatus("Sign in failed");
+			          const msg = (err && err.message) || String(err);
+			          setError(
+	                msg === "invalid_credentials"
+	                  ? "Invalid email/username or password."
+	                  : msg === "email_not_verified"
+	                    ? "Check your email and click the verification link before signing in."
+	                  : msg === "bad_request"
+	                    ? "Check your email/username and use a password with 8+ characters."
+	                    : msg === "account_disabled"
+	                      ? "Account disabled."
                       : msg === "access_expired"
                         ? "Access expired."
                         : msg
@@ -1626,33 +1735,59 @@
 	              return;
 	            }
 
-			        setStatus("Creating account…");
-		        try {
-	            const deviceId = getOrCreateDeviceId();
-	            const deviceName = getDeviceName();
-		          const j = await apiJson("/api/auth/signup", { method: "POST", body: { email, password, deviceId, deviceName } });
-	          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
-	          el.authPassInput.value = "";
-	          try {
-	            localStorage.setItem("camfordick_last_username", email);
-	          } catch {
-	            // Ignore.
-	          }
+				        setStatus("Creating account…");
+			        try {
+		            const deviceId = getOrCreateDeviceId();
+		            const deviceName = getDeviceName();
+                let returnTo = "";
+                try {
+                  const u = new URL(window.location.href);
+                  u.hash = "";
+                  returnTo = u.toString();
+                } catch {
+                  returnTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+                }
+			          const j = await apiJson("/api/auth/signup", { method: "POST", body: { email, password, deviceId, deviceName, return_to: returnTo } });
+                // Email verification: no auth token until the user clicks the email link.
+                if (j && j.pending) {
+                  el.authPassInput.value = "";
+                  try {
+                    localStorage.setItem("camfordick_last_username", email);
+                  } catch {
+                    // Ignore.
+                  }
+                  setStatus("Check your email to verify.");
+                  toast("Verification email sent.");
+                  return;
+                }
+		            persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+		            el.authPassInput.value = "";
+		          try {
+		            localStorage.setItem("camfordick_last_username", email);
+		          } catch {
+		            // Ignore.
+		          }
 	          await refreshMe();
 	          renderLibrary();
 	          await refreshLibrary({ reason: "startup", toastOnChange: false });
 	          setStatus("Account created");
-		        } catch (err) {
-		          console.error(err);
-		          setStatus("Sign up failed");
-		          const msg = (err && err.message) || String(err);
-	            setError(
-                msg === "email_taken"
-                  ? "Email already has an account."
-                  : msg === "bad_email"
-                    ? "Invalid email."
-                    : msg === "signup_disabled"
-                      ? "Sign up is disabled. Ask the admin."
+			        } catch (err) {
+			          console.error(err);
+			          setStatus("Sign up failed");
+			          const msg = (err && err.message) || String(err);
+		            setError(
+	                msg === "email_taken"
+	                  ? "Email already has an account."
+	                  : msg === "email_send_failed"
+	                    ? "Email verification failed to send. Ask the admin to configure SMTP."
+	                  : msg === "missing_public_base"
+	                    ? "Server misconfigured (missing public base URL). Ask the admin."
+	                  : msg === "rate_limited"
+	                    ? "Too many attempts. Try again later."
+	                  : msg === "bad_email"
+	                    ? "Invalid email."
+	                    : msg === "signup_disabled"
+	                      ? "Sign up is disabled. Ask the admin."
                       : msg === "bad_request"
                         ? "Use a password with 8+ characters."
                         : msg
@@ -1663,6 +1798,7 @@
 	      function signOut() {
           stopHeartbeat();
           closeChat();
+          closeUsernameGate();
 	        persistAuthTokenForBase(state.serverBase || window.location.origin, "");
 	        state.contentToken = "";
 	        state.serverToken = "";
@@ -2255,34 +2391,43 @@
 	          }
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const j = await r.json();
-          if (!j || !j.ok || !j.user) throw new Error("Bad server response");
-          if (state.adminRoute && String(j.user.role || "") === "admin") state.cornerOpen = true;
-	          state.me = {
-	            username: String(j.user.username || ""),
-              email: String(j.user.email || ""),
-	            role: String(j.user.role || ""),
-	            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
-	            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-	            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
-	          };
-          setAuthUi();
-	          if (String(state.me.role) === "admin") {
-	            refreshAdminUsers().catch(() => {});
-	            refreshContentTokens().catch(() => {});
-	            populateVideoSelection().catch(() => {});
-              adminRefreshSessions().catch(() => {});
+	          if (!j || !j.ok || !j.user) throw new Error("Bad server response");
+	          if (state.adminRoute && String(j.user.role || "") === "admin") state.cornerOpen = true;
+		          state.me = {
+		            username: String(j.user.username || ""),
+	              email: String(j.user.email || ""),
+		            role: String(j.user.role || ""),
+		            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+		            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+		            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
+                emailVerified: j.user.emailVerified === false ? false : true,
+                needsUsername: !!j.user.needsUsername,
+		          };
+	          setAuthUi();
+            if (String(state.me.role || "") === "user" && state.me.needsUsername) {
+              openUsernameGate(state.postVerifySetup ? "Email verified. Choose a username to continue." : "");
+            } else {
+              closeUsernameGate();
+            }
+            state.postVerifySetup = false;
+		          if (String(state.me.role) === "admin") {
+		            refreshAdminUsers().catch(() => {});
+		            refreshContentTokens().catch(() => {});
+		            populateVideoSelection().catch(() => {});
+	              adminRefreshSessions().catch(() => {});
               adminChatRefreshThreads().catch(() => {});
 	          }
             startHeartbeat();
 	          return true;
-	        } catch {
-	          state.me = null;
-            stopHeartbeat();
-            closeChat();
-	          setAuthUi();
-	          return false;
-	        }
-	      }
+		        } catch {
+		          state.me = null;
+              closeUsernameGate();
+	            stopHeartbeat();
+	            closeChat();
+		          setAuthUi();
+		          return false;
+		        }
+		      }
 
       // Content Access Token Functions
       async function refreshContentTokens() {
@@ -2605,17 +2750,20 @@
         if (!r.ok) throw new Error(`Server error (${r.status})`);
         const j = await r.json();
         if (!j || !j.ok || !Array.isArray(j.videos)) throw new Error("Bad server response");
-	        if (j.user) {
-	          state.me = {
-	            username: String(j.user.username || ""),
-              email: String(j.user.email || ""),
-	            role: String(j.user.role || ""),
-	            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
-	            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-	            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
-	          };
-	          setAuthUi();
-	        }
+		        if (j.user) {
+		          state.me = {
+		            username: String(j.user.username || ""),
+	              email: String(j.user.email || ""),
+		            role: String(j.user.role || ""),
+		            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+		            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+		            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
+                emailVerified: j.user.emailVerified === false ? false : true,
+                needsUsername: !!j.user.needsUsername,
+		          };
+		          setAuthUi();
+              if (String(state.me.role || "") === "user" && state.me.needsUsername) openUsernameGate("");
+		        }
         /** @type {ServerVideoEntry[]} */
         const list = j.videos.map((v) => ({
           source: "server",
@@ -3001,20 +3149,25 @@
       // Initial setup
       (async () => {
         // Magic link redirect: apply token from hash and clear hash
-        const hash = window.location.hash.slice(1);
-        if (hash) {
-          const authMatch = /^auth=([^&]+)/.exec(hash);
-          const errorMatch = /error=([^&]*)/.exec(hash);
-          if (authMatch) {
-            const token = decodeURIComponent(authMatch[1]);
-            const base = window.location.origin;
-            state.authToken = token;
-            persistAuthTokenForBase(base, token);
-          }
-          if (errorMatch) {
-            const err = decodeURIComponent(errorMatch[1]);
-            setError(err === "invalid_or_expired_link" ? "Link expired or already used." : err === "account_disabled" ? "Account disabled." : err === "access_expired" ? "Access expired." : err);
-          }
+	        const hash = window.location.hash.slice(1);
+	        if (hash) {
+	          const authMatch = /^auth=([^&]+)/.exec(hash);
+	          const errorMatch = /error=([^&]*)/.exec(hash);
+            const setupMatch = /setup=([^&]*)/.exec(hash);
+	          if (authMatch) {
+	            const token = decodeURIComponent(authMatch[1]);
+	            const base = window.location.origin;
+	            state.authToken = token;
+	            persistAuthTokenForBase(base, token);
+	          }
+            if (setupMatch) {
+              const v = decodeURIComponent(setupMatch[1] || "");
+              state.postVerifySetup = v !== "0";
+            }
+	          if (errorMatch) {
+	            const err = decodeURIComponent(errorMatch[1]);
+	            setError(err === "invalid_or_expired_link" ? "Link expired or already used." : err === "account_disabled" ? "Account disabled." : err === "access_expired" ? "Access expired." : err);
+	          }
           try {
             window.history.replaceState(null, "", window.location.pathname + window.location.search);
           } catch {
@@ -3044,17 +3197,24 @@
           el.ageGateMsg.textContent = "";
           setAuthUi();
         });
-        el.ageNoBtn.addEventListener("click", () => {
-          state.ageOk = false;
-          writeAgeOk(false);
-          el.ageGateMsg.textContent = "Access denied. You must be 18+ to continue.";
-          setAuthUi();
-        });
-        el.cornerAdminBtn.addEventListener("click", () => {
-          const role = state.me ? String(state.me.role || "") : "";
-          if (role !== "admin") {
-            toast("Sign in as admin to open the admin panel.");
-            try {
+	        el.ageNoBtn.addEventListener("click", () => {
+	          state.ageOk = false;
+	          writeAgeOk(false);
+	          el.ageGateMsg.textContent = "Access denied. You must be 18+ to continue.";
+	          setAuthUi();
+	        });
+          if (el.usernameGateSaveBtn) el.usernameGateSaveBtn.addEventListener("click", saveUsernameFromGate);
+          if (el.usernameGateSignOutBtn) el.usernameGateSignOutBtn.addEventListener("click", signOut);
+          if (el.usernameGateInput) {
+            el.usernameGateInput.addEventListener("keydown", (e) => {
+              if (e.key === "Enter") saveUsernameFromGate();
+            });
+          }
+	        el.cornerAdminBtn.addEventListener("click", () => {
+	          const role = state.me ? String(state.me.role || "") : "";
+	          if (role !== "admin") {
+	            toast("Sign in as admin to open the admin panel.");
+	            try {
               el.authUserInput.focus();
             } catch {
               // Ignore.

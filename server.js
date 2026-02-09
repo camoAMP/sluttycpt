@@ -8,6 +8,13 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { spawn } = require("child_process");
+let nodemailer = null;
+try {
+  // Optional dependency used for email verification.
+  nodemailer = require("nodemailer");
+} catch {
+  // Ignore.
+}
 
 const PORT = Number(process.env.PORT || 5173);
 const HOST = process.env.HOST || "0.0.0.0";
@@ -22,6 +29,24 @@ const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(process.cwd(),
 const PREVIEW_SECONDS = Math.max(1, Math.min(60, Number(process.env.PREVIEW_SECONDS || 10)));
 const SIGNUP_ENABLED = process.env.SIGNUP_ENABLED === "0" ? false : true;
 const SESSION_DAYS = Math.max(1, Math.min(365, Number(process.env.SESSION_DAYS || 30)));
+
+const SMTP_HOST = String(process.env.SMTP_HOST || "").trim();
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = String(process.env.SMTP_USER || "").trim();
+const SMTP_PASS = String(process.env.SMTP_PASS || "");
+const SMTP_SECURE = String(process.env.SMTP_SECURE || "").trim() === "1";
+const MAIL_FROM = String(process.env.MAIL_FROM || SMTP_USER || "").trim();
+const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
+const ALLOWED_RETURN_ORIGINS = String(process.env.ALLOWED_RETURN_ORIGINS || "")
+  .split(",")
+  .map((s) => String(s || "").trim())
+  .filter(Boolean);
+const EMAIL_VERIFY = process.env.EMAIL_VERIFY === "0" ? false : true;
+const EMAIL_VERIFY_TTL_MIN = (() => {
+  const raw = Number(process.env.EMAIL_VERIFY_TTL_MIN || 24 * 60);
+  if (!Number.isFinite(raw)) return 24 * 60;
+  return Math.max(10, Math.min(7 * 24 * 60, Math.floor(raw)));
+})();
 
 const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v"]);
 
@@ -250,6 +275,131 @@ function b64urlToBuf(s) {
   return Buffer.from(str + pad, "base64");
 }
 
+function smtpConfigured() {
+  return !!(nodemailer && SMTP_HOST && SMTP_USER && SMTP_PASS && MAIL_FROM);
+}
+
+function emailVerificationEnabled() {
+  return EMAIL_VERIFY && smtpConfigured();
+}
+
+function isLocalHostName(hostname) {
+  const h = String(hostname || "").trim().toLowerCase();
+  if (!h) return true;
+  if (h === "localhost" || h === "127.0.0.1" || h === "::1") return true;
+  if (h.endsWith(".local")) return true;
+  // If it's an IP literal, treat as local-ish for scheme guessing.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return true;
+  return false;
+}
+
+function guessPublicBaseUrl(req) {
+  if (PUBLIC_BASE_URL) return PUBLIC_BASE_URL;
+
+  const hostRaw = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+  if (!hostRaw) return "";
+  const hostNoPort = hostRaw.includes(":") ? hostRaw.split(":")[0] : hostRaw;
+
+  // Prefer explicit headers from proxies / Cloudflare Tunnel.
+  let scheme = "";
+  const xfproto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim().toLowerCase();
+  if (xfproto === "http" || xfproto === "https") scheme = xfproto;
+  if (!scheme) {
+    const cfVisitor = String(req.headers["cf-visitor"] || "");
+    const m = /\"scheme\":\"(https?)\"/i.exec(cfVisitor);
+    if (m) scheme = String(m[1] || "").toLowerCase();
+  }
+  if (!scheme) scheme = isLocalHostName(hostNoPort) ? "http" : "https";
+
+  return `${scheme}://${hostRaw}`;
+}
+
+function normalizeReturnTo(raw, fallbackBase) {
+  const base = String(fallbackBase || "").replace(/\/+$/, "");
+  if (!raw) return base ? `${base}/` : "/";
+  const s = String(raw || "").trim();
+  if (!s || s.length > 2000) return base ? `${base}/` : "/";
+  let u;
+  try {
+    u = new URL(s);
+  } catch {
+    return base ? `${base}/` : "/";
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return base ? `${base}/` : "/";
+
+  const allowed = new Set([u.origin, ...ALLOWED_RETURN_ORIGINS.map(String)]);
+  // Always allow redirecting back to the same host the request came in on.
+  if (base) {
+    try {
+      allowed.add(new URL(base).origin);
+    } catch {
+      // Ignore.
+    }
+  }
+  if (!allowed.has(u.origin)) return base ? `${base}/` : "/";
+
+  // Strip hash; we will add our own.
+  return `${u.origin}${u.pathname}${u.search}`;
+}
+
+function getClientIp(req) {
+  const cf = String(req.headers["cf-connecting-ip"] || "").trim();
+  if (cf) return cf;
+  const xff = String(req.headers["x-forwarded-for"] || "").trim();
+  if (xff) return xff.split(",")[0].trim();
+  return String(req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : "").trim();
+}
+
+const signupEmailRateByIp = new Map(); // ip -> {windowStartMs:number,count:number}
+function allowSignupEmail(ip) {
+  const key = String(ip || "unknown");
+  const now = Date.now();
+  const windowMs = 15 * 60_000;
+  const limit = 3;
+  let e = signupEmailRateByIp.get(key);
+  if (!e || now - e.windowStartMs >= windowMs) e = { windowStartMs: now, count: 0 };
+  e.count++;
+  signupEmailRateByIp.set(key, e);
+  return e.count <= limit;
+}
+
+let smtpTransporter = null;
+function getSmtpTransporter() {
+  if (!smtpConfigured()) return null;
+  if (smtpTransporter) return smtpTransporter;
+  const secure = SMTP_SECURE || SMTP_PORT === 465;
+  smtpTransporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+  });
+  return smtpTransporter;
+}
+
+async function sendVerifyEmail({ toEmail, verifyUrl }) {
+  const tr = getSmtpTransporter();
+  if (!tr) throw new Error("smtp_not_configured");
+  const subject = "Verify your email";
+  const text = `Verify your email by opening this link:\n\n${verifyUrl}\n\nIf you did not request this, you can ignore this email.\n`;
+  const html = `
+    <div style="font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; line-height: 1.5;">
+      <h2 style="margin: 0 0 12px;">Verify your email</h2>
+      <p style="margin: 0 0 12px;">Click this link to verify your email and finish sign up:</p>
+      <p style="margin: 0 0 16px;"><a href="${verifyUrl}">${verifyUrl}</a></p>
+      <p style="margin: 0; color: #666;">If you did not request this, you can ignore this email.</p>
+    </div>
+  `;
+
+  await tr.sendMail({
+    from: MAIL_FROM,
+    to: toEmail,
+    subject,
+    text,
+    html,
+  });
+}
+
 function makeAuthToken(user, sessionId = null) {
   const expMs = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
   const payload = { uid: user.id, exp: expMs };
@@ -280,6 +430,44 @@ function makeContentTokenString(userId, tokenId, expMs) {
   const payloadB64 = b64url(JSON.stringify(payload));
   const sig = crypto.createHmac("sha256", AUTH_SECRET).update(payloadB64).digest();
   return `${payloadB64}.${b64url(sig)}`;
+}
+
+function makeEmailVerifyToken(userId, nonce, expMs, returnTo) {
+  const payload = { typ: "ev", uid: userId, nonce: String(nonce || ""), exp: expMs, r: String(returnTo || "") };
+  const payloadB64 = b64url(JSON.stringify(payload));
+  const sig = crypto.createHmac("sha256", AUTH_SECRET).update(payloadB64).digest();
+  return `${payloadB64}.${b64url(sig)}`;
+}
+
+function verifyEmailVerifyToken(token) {
+  const t = String(token || "").trim();
+  const dot = t.indexOf(".");
+  if (dot < 0) return null;
+  const payloadB64 = t.slice(0, dot);
+  const sigB64 = t.slice(dot + 1);
+
+  let payload;
+  try {
+    payload = JSON.parse(b64urlToBuf(payloadB64).toString("utf8"));
+  } catch {
+    return null;
+  }
+  if (!payload || payload.typ !== "ev") return null;
+  if (typeof payload.uid !== "string" || typeof payload.exp !== "number" || typeof payload.nonce !== "string") return null;
+  if (typeof payload.r !== "string") payload.r = "";
+  if (Date.now() > payload.exp) return null;
+
+  const expected = crypto.createHmac("sha256", AUTH_SECRET).update(payloadB64).digest();
+  let got;
+  try {
+    got = b64urlToBuf(sigB64);
+  } catch {
+    return null;
+  }
+  if (got.length !== expected.length) return null;
+  if (!crypto.timingSafeEqual(got, expected)) return null;
+
+  return { uid: payload.uid, nonce: payload.nonce, returnTo: payload.r };
 }
 
 function verifyAuthToken(token) {
@@ -892,93 +1080,197 @@ const server = http.createServer(async (req, res) => {
       return serveIndex(req, res);
     }
 
-    if (pathname === "/api/info") {
-      return json(res, 200, {
-        ok: true,
-        mode: "server",
-        videoDirName: path.basename(VIDEO_DIR),
-        videoDir: VIDEO_DIR,
-        exts: [...VIDEO_EXTS].map((e) => e.slice(1)),
-        auth: {
-          legacyToken: LEGACY_TOKEN ? true : false,
-          users: true,
-          signupEnabled: SIGNUP_ENABLED,
-          previewSeconds: PREVIEW_SECONDS,
-        },
-        now: new Date().toISOString(),
-      });
-    }
+	    if (pathname === "/api/info") {
+	      return json(res, 200, {
+	        ok: true,
+	        mode: "server",
+	        videoDirName: path.basename(VIDEO_DIR),
+	        videoDir: VIDEO_DIR,
+	        exts: [...VIDEO_EXTS].map((e) => e.slice(1)),
+	        auth: {
+	          legacyToken: LEGACY_TOKEN ? true : false,
+	          users: true,
+	          signupEnabled: SIGNUP_ENABLED,
+	          emailVerification: emailVerificationEnabled(),
+	          previewSeconds: PREVIEW_SECONDS,
+	        },
+	        now: new Date().toISOString(),
+	      });
+	    }
 
-    if (pathname === "/api/auth/signup" && req.method === "POST") {
-      if (!SIGNUP_ENABLED) return json(res, 403, { ok: false, error: "signup_disabled" });
-      const body = await readJson(req).catch(() => null);
-      const password = normalizePassword(body && body.password);
-      if (!password) return json(res, 400, { ok: false, error: "bad_request" });
+	    if (pathname === "/api/auth/signup" && req.method === "POST") {
+	      if (!SIGNUP_ENABLED) return json(res, 403, { ok: false, error: "signup_disabled" });
+	      const body = await readJson(req).catch(() => null);
+	      const password = normalizePassword(body && body.password);
+	      if (!password) return json(res, 400, { ok: false, error: "bad_request" });
 
-      const rawEmail = body && Object.prototype.hasOwnProperty.call(body, "email") ? body.email : null;
-      const rawUsername = body && Object.prototype.hasOwnProperty.call(body, "username") ? body.username : null;
-      const wantsEmail = String(rawEmail || "").trim() ? true : false;
-      const email = wantsEmail ? normalizeEmail(rawEmail) : null;
-      if (wantsEmail && !email) return json(res, 400, { ok: false, error: "bad_email" });
+	      const rawEmail = body && Object.prototype.hasOwnProperty.call(body, "email") ? body.email : null;
+	      const email = normalizeEmail(rawEmail);
+	      if (!email) return json(res, 400, { ok: false, error: "bad_email" });
 
-      const usernameProvided = String(rawUsername || "").trim() ? true : false;
-      let username = cleanUsername(rawUsername);
-      if (!username && email) username = deriveUsernameFromEmail(email);
-      if (!username) return json(res, 400, { ok: false, error: "bad_request" });
+	      const base = guessPublicBaseUrl(req);
+	      const returnTo = normalizeReturnTo(body && (body.return_to ?? body.returnTo ?? body.returnToUrl), base);
 
-      if (email && usersDb.users.some((u) => String(u.email || "").toLowerCase() === email)) {
-        return json(res, 409, { ok: false, error: "email_taken" });
-      }
+	      // Email verification flow (recommended). If SMTP isn't configured (or EMAIL_VERIFY=0), fall back to the
+	      // old immediate sign-up behavior for local/dev usage.
+	      if (emailVerificationEnabled()) {
+	        const ip = getClientIp(req);
+	        if (!allowSignupEmail(ip)) return json(res, 429, { ok: false, error: "rate_limited" });
 
-      if (usersDb.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
-        if (usernameProvided) return json(res, 409, { ok: false, error: "username_taken" });
-        const base = username;
-        for (let i = 1; i <= 999; i++) {
-          const suffix = `_${i}`;
-          const trimmed = base.length + suffix.length > 32 ? base.slice(0, 32 - suffix.length) : base;
-          const cand = `${trimmed}${suffix}`;
-          if (!usersDb.users.some((u) => u.username.toLowerCase() === cand.toLowerCase())) {
-            username = cand;
-            break;
-          }
-        }
-        if (usersDb.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
-          return json(res, 409, { ok: false, error: "username_taken" });
-        }
-      }
+	        let user = usersDb.users.find((u) => String(u.email || "").toLowerCase() === email) || null;
+	        const nowIso = new Date().toISOString();
+	        const expMs = Date.now() + EMAIL_VERIFY_TTL_MIN * 60_000;
 
-      const salt = crypto.randomBytes(16);
-      const derived = await scryptAsync(password, salt);
-      /** @type {"admin" | "user"} */
-      const role = usersDb.users.length === 0 ? "admin" : "user";
-      const user = {
-        id: crypto.randomUUID(),
-        username,
-        email: email || undefined,
-        role,
-        salt: salt.toString("hex"),
-        passHash: derived.toString("hex"),
-        quota: role === "admin" ? -1 : 0,
-        unlocked: [],
-        contentTokens: [], // Initialize content tokens array
-        disabled: false,
-        accessUntilMs: null,
-        createdAt: new Date().toISOString(),
-      };
-      usersDb.users.push(user);
-      await queueSaveUsers();
+	        if (user) {
+	          const verified = user.emailVerified === false ? false : true;
+	          if (verified) return json(res, 409, { ok: false, error: "email_taken" });
 
-      const session = createSessionForUser(user, { deviceId: body && body.deviceId, deviceName: body && body.deviceName, req });
-      await queueSaveSessions();
-      const auth = makeAuthToken(user, session.id);
-      return json(res, 200, { ok: true, user: { username: user.username, email: user.email || "", role: user.role, quota: user.quota }, auth });
-    }
+	          // Update password + rotate verification nonce.
+	          const salt = crypto.randomBytes(16);
+	          const derived = await scryptAsync(password, salt);
+	          user.salt = salt.toString("hex");
+	          user.passHash = derived.toString("hex");
+	          user.verifyNonce = crypto.randomBytes(16).toString("hex");
+	          user.verifyExpiresAt = expMs;
+	          user.needsUsername = true;
+	          if (!user.createdAt) user.createdAt = nowIso;
+	          await queueSaveUsers();
+	        } else {
+	          /** @type {"admin" | "user"} */
+	          const role = usersDb.users.length === 0 ? "admin" : "user";
+	          const salt = crypto.randomBytes(16);
+	          const derived = await scryptAsync(password, salt);
+	          user = {
+	            id: crypto.randomUUID(),
+	            username: `u_${crypto.randomBytes(4).toString("hex")}`,
+	            email,
+	            role,
+	            salt: salt.toString("hex"),
+	            passHash: derived.toString("hex"),
+	            quota: role === "admin" ? -1 : 0,
+	            unlocked: [],
+	            contentTokens: [],
+	            disabled: false,
+	            accessUntilMs: null,
+	            emailVerified: false,
+	            verifyNonce: crypto.randomBytes(16).toString("hex"),
+	            verifyExpiresAt: expMs,
+	            needsUsername: true,
+	            createdAt: nowIso,
+	          };
+	          usersDb.users.push(user);
+	          await queueSaveUsers();
+	        }
 
-    if (pathname === "/api/auth/login" && req.method === "POST") {
-      const body = await readJson(req).catch(() => null);
-      const password = normalizePassword(body && body.password);
-      const identifierRaw = String((body && (body.identifier ?? body.email ?? body.username)) || "").trim();
-      if (!identifierRaw || !password) return json(res, 400, { ok: false, error: "bad_request" });
+	        if (!base) return json(res, 500, { ok: false, error: "missing_public_base" });
+	        const token = makeEmailVerifyToken(user.id, String(user.verifyNonce || ""), expMs, returnTo);
+	        const verifyUrl = `${base}/api/auth/verify-email?token=${encodeURIComponent(token)}`;
+	        try {
+	          await sendVerifyEmail({ toEmail: email, verifyUrl });
+	        } catch (err) {
+	          console.error("Failed to send verification email:", err);
+	          return json(res, 500, { ok: false, error: "email_send_failed" });
+	        }
+	        return json(res, 200, { ok: true, pending: true });
+	      }
+
+	      // Legacy immediate signup (no email verification).
+	      // Derive a username from the email and ensure uniqueness.
+	      let username = deriveUsernameFromEmail(email);
+	      if (!username) return json(res, 400, { ok: false, error: "bad_request" });
+	      if (usersDb.users.some((u) => String(u.email || "").toLowerCase() === email)) {
+	        return json(res, 409, { ok: false, error: "email_taken" });
+	      }
+	      if (usersDb.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+	        const baseName = username;
+	        for (let i = 1; i <= 999; i++) {
+	          const suffix = `_${i}`;
+	          const trimmed = baseName.length + suffix.length > 32 ? baseName.slice(0, 32 - suffix.length) : baseName;
+	          const cand = `${trimmed}${suffix}`;
+	          if (!usersDb.users.some((u) => u.username.toLowerCase() === cand.toLowerCase())) {
+	            username = cand;
+	            break;
+	          }
+	        }
+	        if (usersDb.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
+	          return json(res, 409, { ok: false, error: "username_taken" });
+	        }
+	      }
+
+	      const salt = crypto.randomBytes(16);
+	      const derived = await scryptAsync(password, salt);
+	      /** @type {"admin" | "user"} */
+	      const role = usersDb.users.length === 0 ? "admin" : "user";
+	      const user = {
+	        id: crypto.randomUUID(),
+	        username,
+	        email,
+	        role,
+	        salt: salt.toString("hex"),
+	        passHash: derived.toString("hex"),
+	        quota: role === "admin" ? -1 : 0,
+	        unlocked: [],
+	        contentTokens: [],
+	        disabled: false,
+	        accessUntilMs: null,
+	        emailVerified: true,
+	        needsUsername: false,
+	        createdAt: new Date().toISOString(),
+	      };
+	      usersDb.users.push(user);
+	      await queueSaveUsers();
+
+	      const session = createSessionForUser(user, { deviceId: body && body.deviceId, deviceName: body && body.deviceName, req });
+	      await queueSaveSessions();
+	      const auth = makeAuthToken(user, session.id);
+	      return json(res, 200, { ok: true, user: { username: user.username, email: user.email || "", role: user.role, quota: user.quota }, auth });
+	    }
+
+	    if (pathname === "/api/auth/verify-email" && req.method === "GET") {
+	      const base = guessPublicBaseUrl(req);
+	      const tokenRaw = url.searchParams.get("token") || "";
+	      const v = verifyEmailVerifyToken(tokenRaw);
+	      const returnTo = normalizeReturnTo(v && v.returnTo ? v.returnTo : "", base);
+
+	      const redirectWith = (hash) => {
+	        const loc = `${returnTo}#${hash}`;
+	        res.writeHead(302, { Location: loc, "Cache-Control": "no-store" });
+	        res.end();
+	      };
+
+	      if (!v) return redirectWith("error=invalid_or_expired_link");
+
+	      const user = usersDb.users.find((u) => u.id === v.uid) || null;
+	      if (!user) return redirectWith("error=invalid_or_expired_link");
+	      if (user.disabled) return redirectWith("error=account_disabled");
+	      if (typeof user.accessUntilMs === "number" && Date.now() > user.accessUntilMs) return redirectWith("error=access_expired");
+
+	      const alreadyVerified = user.emailVerified === false ? false : true;
+	      if (!alreadyVerified) {
+	        const nonce = String(user.verifyNonce || "");
+	        const expMs = typeof user.verifyExpiresAt === "number" ? user.verifyExpiresAt : 0;
+	        if (!nonce || nonce !== v.nonce) return redirectWith("error=invalid_or_expired_link");
+	        if (expMs && Date.now() > expMs) return redirectWith("error=invalid_or_expired_link");
+
+	        user.emailVerified = true;
+	        user.verifyNonce = "";
+	        user.verifyExpiresAt = null;
+	        if (user.needsUsername !== false) user.needsUsername = true;
+	        await queueSaveUsers();
+	      }
+
+	      const session = createSessionForUser(user, { deviceId: "", deviceName: "", req });
+	      await queueSaveSessions();
+	      const auth = makeAuthToken(user, session.id);
+	      const setup = user.needsUsername ? "&setup=1" : "";
+	      return redirectWith(`auth=${encodeURIComponent(auth)}${setup}`);
+	    }
+
+	    if (pathname === "/api/auth/login" && req.method === "POST") {
+	      const body = await readJson(req).catch(() => null);
+	      const password = normalizePassword(body && body.password);
+	      const identifierRaw = String((body && (body.identifier ?? body.email ?? body.username)) || "").trim();
+	      if (!identifierRaw || !password) return json(res, 400, { ok: false, error: "bad_request" });
 
       /** @type {any} */
       let user = null;
@@ -991,15 +1283,16 @@ const server = http.createServer(async (req, res) => {
         if (!username) return json(res, 400, { ok: false, error: "bad_request" });
         user = usersDb.users.find((u) => u.username.toLowerCase() === username.toLowerCase()) || null;
       }
-      if (!user) return json(res, 401, { ok: false, error: "invalid_credentials" });
-      const ok = await verifyPassword(user, password).catch(() => false);
-      if (!ok) return json(res, 401, { ok: false, error: "invalid_credentials" });
+	      if (!user) return json(res, 401, { ok: false, error: "invalid_credentials" });
+	      const ok = await verifyPassword(user, password).catch(() => false);
+	      if (!ok) return json(res, 401, { ok: false, error: "invalid_credentials" });
 
-      if (user.disabled) return json(res, 403, { ok: false, error: "account_disabled" });
-      if (typeof user.accessUntilMs === "number" && Date.now() > user.accessUntilMs) return json(res, 403, { ok: false, error: "access_expired" });
+	      if (user.email && user.emailVerified === false) return json(res, 403, { ok: false, error: "email_not_verified" });
+	      if (user.disabled) return json(res, 403, { ok: false, error: "account_disabled" });
+	      if (typeof user.accessUntilMs === "number" && Date.now() > user.accessUntilMs) return json(res, 403, { ok: false, error: "access_expired" });
 
-      const session = createSessionForUser(user, { deviceId: body && body.deviceId, deviceName: body && body.deviceName, req });
-      await queueSaveSessions();
+	      const session = createSessionForUser(user, { deviceId: body && body.deviceId, deviceName: body && body.deviceName, req });
+	      await queueSaveSessions();
       const auth = makeAuthToken(user, session.id);
       return json(res, 200, { ok: true, user: { username: user.username, email: user.email || "", role: user.role, quota: user.quota }, auth });
     }
@@ -1009,25 +1302,59 @@ const server = http.createServer(async (req, res) => {
       if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
       if (ctx.kind === "legacy") return json(res, 200, { ok: true, user: { username: "legacy-token", role: "admin", quota: -1, unlockedCount: -1 } });
       if (ctx.kind !== "user") return json(res, 401, { ok: false, error: "unauthorized" });
-      const u = ctx.user;
-      const accessUntilMs = u.accessUntilMs === null ? null : typeof u.accessUntilMs === "number" ? u.accessUntilMs : null;
-      const accessRemainingMs = typeof accessUntilMs === "number" ? Math.max(0, accessUntilMs - Date.now()) : null;
-      return json(res, 200, {
-        ok: true,
-        inactive: authInactiveReason(ctx),
-        user: {
-          username: u.username,
-          email: u.email || "",
-          role: u.role,
-          quota: u.quota,
-          unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
-          disabled: !!u.disabled,
-          accessUntilMs,
-          accessRemainingMs,
-          contentTokens: u.contentTokens || [],
-        },
-      });
-    }
+	      const u = ctx.user;
+	      const accessUntilMs = u.accessUntilMs === null ? null : typeof u.accessUntilMs === "number" ? u.accessUntilMs : null;
+	      const accessRemainingMs = typeof accessUntilMs === "number" ? Math.max(0, accessUntilMs - Date.now()) : null;
+	      const emailVerified = u.email ? (u.emailVerified === false ? false : true) : true;
+	      return json(res, 200, {
+	        ok: true,
+	        inactive: authInactiveReason(ctx),
+	        user: {
+	          username: u.username,
+	          email: u.email || "",
+	          role: u.role,
+	          quota: u.quota,
+	          unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
+	          disabled: !!u.disabled,
+	          emailVerified,
+	          needsUsername: !!u.needsUsername,
+	          accessUntilMs,
+	          accessRemainingMs,
+	          contentTokens: u.contentTokens || [],
+	        },
+	      });
+	    }
+
+	    if (pathname === "/api/me/username" && req.method === "POST") {
+	      const ctx = authContext(req, url);
+	      if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
+	      const inactive = authInactiveReason(ctx);
+	      if (inactive) return json(res, 403, { ok: false, error: inactive === "disabled" ? "account_disabled" : "access_expired" });
+	      if (ctx.kind !== "user") return json(res, 403, { ok: false, error: "forbidden" });
+
+	      const body = await readJson(req).catch(() => null);
+	      const username = cleanUsername(body && body.username);
+	      if (!username) return json(res, 400, { ok: false, error: "bad_username" });
+
+	      const taken = usersDb.users.some((u) => u.id !== ctx.user.id && String(u.username || "").toLowerCase() === username.toLowerCase());
+	      if (taken) return json(res, 409, { ok: false, error: "username_taken" });
+
+	      ctx.user.username = username;
+	      ctx.user.needsUsername = false;
+	      await queueSaveUsers();
+	      return json(res, 200, {
+	        ok: true,
+	        user: {
+	          username: ctx.user.username,
+	          email: ctx.user.email || "",
+	          role: ctx.user.role,
+	          quota: ctx.user.quota,
+	          unlockedCount: Array.isArray(ctx.user.unlocked) ? ctx.user.unlocked.length : 0,
+	          emailVerified: ctx.user.email ? (ctx.user.emailVerified === false ? false : true) : true,
+	          needsUsername: !!ctx.user.needsUsername,
+	        },
+	      });
+	    }
 
     if (pathname === "/api/ping" && req.method === "POST") {
       const ctx = authContext(req, url);
@@ -1167,33 +1494,46 @@ const server = http.createServer(async (req, res) => {
           .filter((v) => !allowedSet || allowedSet.has(v.path))
           .map((v) => ({ ...v, unlocked: usedSet.has(v.path) || canUnlockNew }));
 
-        return json(res, 200, {
-          ok: true,
-          count: list.length,
-          videos: list,
-          user: { role: "token-user", quota: unlimited ? -1 : Number.isFinite(maxUses) ? Math.floor(maxUses) : 0, unlockedCount: usedSet.size },
-        });
-      }
-      
-      if (ctx.kind === "legacy" || ctx.role === "admin") {
-        const list = videos.map((v) => ({ ...v, unlocked: true }));
-        return json(res, 200, { ok: true, count: list.length, videos: list, user: { role: "admin", quota: -1, unlockedCount: -1 } });
-      }
-      const unlockedSet = new Set((ctx.user.unlocked || []).map(String));
-      const list = videos.map((v) => ({ ...v, unlocked: unlockedSet.has(v.path) }));
-      return json(res, 200, {
-        ok: true,
+	        return json(res, 200, {
+	          ok: true,
+	          count: list.length,
+	          videos: list,
+	          user: {
+	            role: "token-user",
+	            quota: unlimited ? -1 : Number.isFinite(maxUses) ? Math.floor(maxUses) : 0,
+	            unlockedCount: usedSet.size,
+	            emailVerified: true,
+	            needsUsername: false,
+	          },
+	        });
+	      }
+	      
+	      if (ctx.kind === "legacy" || ctx.role === "admin") {
+	        const list = videos.map((v) => ({ ...v, unlocked: true }));
+	        return json(res, 200, {
+	          ok: true,
+	          count: list.length,
+	          videos: list,
+	          user: { role: "admin", quota: -1, unlockedCount: -1, emailVerified: true, needsUsername: false },
+	        });
+	      }
+	      const unlockedSet = new Set((ctx.user.unlocked || []).map(String));
+	      const list = videos.map((v) => ({ ...v, unlocked: unlockedSet.has(v.path) }));
+	      return json(res, 200, {
+	        ok: true,
         count: list.length,
         videos: list,
-        user: {
-          username: ctx.user.username,
-          email: ctx.user.email || "",
-          role: ctx.user.role,
-          quota: ctx.user.quota,
-          unlockedCount: unlockedSet.size,
-        },
-      });
-    }
+	        user: {
+	          username: ctx.user.username,
+	          email: ctx.user.email || "",
+	          role: ctx.user.role,
+	          quota: ctx.user.quota,
+	          unlockedCount: unlockedSet.size,
+	          emailVerified: ctx.user.email ? (ctx.user.emailVerified === false ? false : true) : true,
+	          needsUsername: !!ctx.user.needsUsername,
+	        },
+	      });
+	    }
 
     if (pathname === "/api/video-meta" && req.method === "GET") {
       const ctx = authContext(req, url);
@@ -1279,20 +1619,22 @@ const server = http.createServer(async (req, res) => {
       const inactive = authInactiveReason(ctx);
       if (inactive) return json(res, 403, { ok: false, error: inactive === "disabled" ? "account_disabled" : "access_expired" });
       if (!(ctx.kind === "legacy" || ctx.role === "admin")) return json(res, 403, { ok: false, error: "forbidden" });
-      const users = usersDb.users
-        .map((u) => ({
-          username: u.username,
-          email: u.email || "",
-          role: u.role,
-          quota: u.quota,
-          unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
-          createdAt: u.createdAt,
-          disabled: !!u.disabled,
-          accessUntilMs: u.accessUntilMs === null ? null : typeof u.accessUntilMs === "number" ? u.accessUntilMs : null,
-          accessRemainingMs:
-            typeof u.accessUntilMs === "number" ? Math.max(0, u.accessUntilMs - Date.now()) : null,
-          contentTokens: u.contentTokens ? u.contentTokens.length : 0,
-        }))
+	      const users = usersDb.users
+	        .map((u) => ({
+	          username: u.username,
+	          email: u.email || "",
+	          role: u.role,
+	          quota: u.quota,
+	          unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
+	          emailVerified: u.email ? (u.emailVerified === false ? false : true) : true,
+	          needsUsername: !!u.needsUsername,
+	          createdAt: u.createdAt,
+	          disabled: !!u.disabled,
+	          accessUntilMs: u.accessUntilMs === null ? null : typeof u.accessUntilMs === "number" ? u.accessUntilMs : null,
+	          accessRemainingMs:
+	            typeof u.accessUntilMs === "number" ? Math.max(0, u.accessUntilMs - Date.now()) : null,
+	          contentTokens: u.contentTokens ? u.contentTokens.length : 0,
+	        }))
         .sort((a, b) => a.username.localeCompare(b.username));
       return json(res, 200, { ok: true, users });
     }

@@ -94,7 +94,7 @@ Once that’s active, users just open your domain and sign in.
 
 - Admin login URL: `/admin` (example: `https://videos.cptcommunityadults.fun/admin`)
 - Sign-up is on `/` (the first account created becomes admin)
-- User sign-in/sign-up is **email + password** (username is generated automatically)
+- User sign-in/sign-up is **email + password**
 
 ## Accounts + Quotas
 
@@ -103,6 +103,38 @@ Once that’s active, users just open your domain and sign in.
 - Admin can set a **quota (videos)** for each user.
 - Locked videos show **thumbnails** and a **10s preview**; users must **unlock** to watch/download full.
 - Admin can see **online sessions/devices** and use the built-in **chat** to message users.
+
+## Email Verification + Choose Username (Recommended)
+
+When SMTP is configured, sign-up requires **email verification**:
+
+1. User enters **Email + Password** and clicks **Sign Up**
+2. Server emails a verification link
+3. After clicking the link, the UI signs the user in and prompts them to **choose a username**
+
+Server environment variables:
+
+```bash
+# Enable/disable verification (default: enabled when SMTP is configured)
+export EMAIL_VERIFY=1
+
+# Verification link TTL (minutes). Default: 1440 (24h)
+export EMAIL_VERIFY_TTL_MIN=1440
+
+# SMTP (required to send verification emails)
+export SMTP_HOST="smtp.gmail.com"
+export SMTP_PORT="587"
+export SMTP_USER="you@gmail.com"
+export SMTP_PASS="your-app-password"
+export MAIL_FROM="you@gmail.com"   # optional (defaults to SMTP_USER)
+
+# Optional: override the external base URL used in email links
+# (useful if the server sees http internally but users should open https)
+# export PUBLIC_BASE_URL="https://videos.cptcommunityadults.fun"
+
+# Optional: allow returning to a different UI origin (e.g. GitHub Pages)
+# export ALLOWED_RETURN_ORIGINS="https://youruser.github.io"
+```
 
 ## Content Access Tokens (New Feature)
 
