@@ -483,8 +483,9 @@ async function serveIndex(req, res) {
       // Anti-piracy headers
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp",
-      "Cross-Origin-Opener-Policy": "same-origin"
+      // NOTE: Do not set COEP/COOP on the HTML shell when using Tailwind CDN.
+      // COEP require-corp will block cross-origin scripts that don't send CORP/CORS headers
+      // (e.g. https://cdn.tailwindcss.com), causing the UI to appear "unstyled".
     });
     if (req.method === "HEAD") return res.end();
     res.end(buf);
