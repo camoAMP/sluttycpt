@@ -1,4 +1,4 @@
-# Camfordick (aka camodick)
+# SluttyCPT (Camodick video server)
 
 Static web UI (GitHub Pages) + your PC serves the actual video files (not stored in git).
 
