@@ -698,12 +698,16 @@
 	        currentIsPreview: false,
 	        scanInProgress: false,
 	        scanSeq: 0,
-	        autoRescanMs: 15_000,
-	        toastTimer: null,
-	        thumbObserver: null,
-          pingTimer: null,
-          pingInFlight: false,
-	        adminUsers: [],
+		        autoRescanMs: 15_000,
+		        toastTimer: null,
+		        thumbObserver: null,
+            durationByPath: new Map(), // server: relPath -> durationSec
+            durationQueue: [],
+            durationQueued: new Set(),
+            durationInFlight: 0,
+	          pingTimer: null,
+	          pingInFlight: false,
+		        adminUsers: [],
 	        contentTokens: [],
 	        allVideos: [],
           chatOpen: false,
@@ -912,7 +916,7 @@
 
         function looksLikeEmail(raw) {
           const s = String(raw || "").trim();
-          return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(s);
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
         }
 
         function getOrCreateDeviceId() {
@@ -2507,13 +2511,86 @@
         return buildServerUrl(`/thumb/${encodePathForUrl(relPath)}`);
       }
 
-      function serverPreviewUrl(relPath) {
-        return buildServerUrl(`/preview/${encodePathForUrl(relPath)}`);
-      }
+	      function serverPreviewUrl(relPath) {
+	        return buildServerUrl(`/preview/${encodePathForUrl(relPath)}`);
+	      }
 
-      async function detectServerInfoAt(base) {
-        try {
-          const u = new URL("/api/info", base);
+        function formatDurationSec(sec) {
+          const s = Number(sec);
+          if (!Number.isFinite(s) || s <= 0) return "--:--";
+          const total = Math.round(s);
+          const h = Math.floor(total / 3600);
+          const m = Math.floor((total % 3600) / 60);
+          const ss = total % 60;
+          if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+          return `${m}:${String(ss).padStart(2, "0")}`;
+        }
+
+        function setDurationTextForPath(relPath) {
+          const cached = state.durationByPath.has(relPath) ? state.durationByPath.get(relPath) : undefined;
+          const label =
+            cached === undefined
+              ? "Length: …"
+              : cached === null
+                ? "Length: --:--"
+                : `Length: ${formatDurationSec(cached)}`;
+          try {
+            const nodes = document.querySelectorAll("[data-duration-path]");
+            for (const n of nodes) {
+              if (!n || !n.dataset) continue;
+              if (String(n.dataset.durationPath || "") !== relPath) continue;
+              n.textContent = label;
+            }
+          } catch {
+            // Ignore.
+          }
+        }
+
+        function queueDurationFetch(relPath) {
+          const p = String(relPath || "");
+          if (!p) return;
+          if (state.mode !== "server") return;
+          if (state.durationByPath.has(p)) {
+            setDurationTextForPath(p);
+            return;
+          }
+          if (state.durationQueued.has(p)) return;
+          state.durationQueued.add(p);
+          state.durationQueue.push(p);
+          drainDurationQueue();
+        }
+
+        async function fetchDurationOnce(relPath) {
+          try {
+            const j = await apiJson(`/api/video-meta?path=${encodeURIComponent(relPath)}`);
+            const v = j && typeof j.durationSec === "number" && Number.isFinite(j.durationSec) ? j.durationSec : null;
+            state.durationByPath.set(relPath, v);
+          } catch {
+            state.durationByPath.set(relPath, null);
+          } finally {
+            state.durationQueued.delete(relPath);
+            setDurationTextForPath(relPath);
+          }
+        }
+
+        function drainDurationQueue() {
+          const MAX = 4;
+          while (state.durationInFlight < MAX && state.durationQueue.length) {
+            const relPath = state.durationQueue.shift();
+            if (!relPath) continue;
+            state.durationInFlight++;
+            fetchDurationOnce(relPath)
+              .catch(() => {})
+              .finally(() => {
+                state.durationInFlight--;
+                drainDurationQueue();
+              });
+          }
+        }
+
+	      async function detectServerInfoAt(base) {
+	        try {
+	          const u = new URL("/api/info", base);
           const r = await fetch(u.toString(), { cache: "no-store" });
           if (!r.ok) return null;
           const j = await r.json();
@@ -2660,16 +2737,20 @@
           return;
         }
 
-        el.emptyState.classList.add("hidden");
-        const needsLocalThumbs = state.videos.some((v) => v.source === "local" && THUMB_PREVIEW_EXTS.has(v.ext));
-        if (needsLocalThumbs) ensureThumbObserver();
+	        el.emptyState.classList.add("hidden");
+	        const needsLocalThumbs = state.videos.some((v) => v.source === "local" && THUMB_PREVIEW_EXTS.has(v.ext));
+	        if (needsLocalThumbs) ensureThumbObserver();
 
-        for (const v of state.videos) {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.dataset.path = v.path;
-          btn.className =
-            "group relative overflow-hidden rounded-2xl border border-white/10 bg-black/25 text-left transition hover:border-white/20 hover:bg-black/35";
+          const role = state.me ? String(state.me.role || "") : "";
+          const isAdmin = role === "admin";
+
+	        for (let i = 0; i < state.videos.length; i++) {
+            const v = state.videos[i];
+	          const btn = document.createElement("button");
+	          btn.type = "button";
+	          btn.dataset.path = v.path;
+	          btn.className =
+	            "group relative overflow-hidden rounded-2xl border border-white/10 bg-black/25 text-left transition hover:border-white/20 hover:bg-black/35";
           if (v.path === state.currentPath) {
             btn.classList.add("ring-2", "ring-neonT/70");
           }
@@ -2742,29 +2823,49 @@
           `;
 	          preview.appendChild(playBadge);
 
-	          const label = document.createElement("div");
-	          label.className = "px-4 py-3";
+		          const label = document.createElement("div");
+		          label.className = "px-4 py-3";
 
-	          const titleEl = document.createElement("div");
-	          titleEl.className = "truncate font-display text-sm font-semibold tracking-wide text-zinc-100";
-	          titleEl.textContent = v.name || v.path;
-	          titleEl.title = v.path;
+		          const titleEl = document.createElement("div");
+		          titleEl.className = "truncate font-display text-sm font-semibold tracking-wide text-zinc-100";
+              const hideNames = v.source === "server" && !isAdmin;
+              const naughtyTitle = `Naughty Stuff ${String(i + 1).padStart(3, "0")}`;
+		          titleEl.textContent = hideNames ? naughtyTitle : v.name || v.path;
+		          titleEl.title = titleEl.textContent;
 
-	          const pathEl = document.createElement("div");
-	          pathEl.className = "mt-0.5 truncate font-mono text-[11px] leading-tight text-zinc-400/90";
-	          pathEl.textContent = v.path;
-	          pathEl.title = v.path;
+		          const pathEl = document.createElement("div");
+		          pathEl.className = "mt-0.5 truncate font-mono text-[11px] leading-tight text-zinc-400/90";
+		          pathEl.textContent = v.path;
+		          pathEl.title = v.path;
+              pathEl.classList.toggle("hidden", v.source === "server" && !isAdmin);
 
-	          const metaEl = document.createElement("div");
-	          metaEl.className = "mt-2 flex items-center gap-2 text-[11px] text-zinc-400";
-	          const extSpan = document.createElement("span");
-	          extSpan.className = "rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono";
+              const durationEl = document.createElement("div");
+              durationEl.className = "mt-0.5 truncate font-mono text-[11px] leading-tight text-zinc-400/90";
+              durationEl.dataset.durationPath = v.path;
+              if (v.source === "server") {
+                const cached = state.durationByPath.has(v.path) ? state.durationByPath.get(v.path) : undefined;
+                durationEl.textContent =
+                  cached === undefined
+                    ? "Length: …"
+                    : cached === null
+                      ? "Length: --:--"
+                      : `Length: ${formatDurationSec(cached)}`;
+                queueDurationFetch(v.path);
+              } else {
+                durationEl.textContent = "Length: --:--";
+              }
+
+		          const metaEl = document.createElement("div");
+		          metaEl.className = "mt-2 flex items-center gap-2 text-[11px] text-zinc-400";
+		          const extSpan = document.createElement("span");
+		          extSpan.className = "rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono";
 	          extSpan.textContent = v.ext;
 	          metaEl.appendChild(extSpan);
 
 	          label.appendChild(titleEl);
 	          label.appendChild(pathEl);
-	          label.appendChild(metaEl);
+              label.appendChild(durationEl);
+		          label.appendChild(metaEl);
 
           btn.appendChild(preview);
           btn.appendChild(label);

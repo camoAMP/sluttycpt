@@ -643,6 +643,102 @@ async function runFfmpeg(args) {
   });
 }
 
+async function runFfprobeDurationSec(absVideo) {
+  return await new Promise((resolve) => {
+    const child = spawn(
+      "ffprobe",
+      [
+        "-hide_banner",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        absVideo,
+      ],
+      { stdio: ["ignore", "pipe", "pipe"] }
+    );
+    let outBuf = "";
+    let errBuf = "";
+    child.stdout.on("data", (d) => {
+      outBuf += d.toString("utf8");
+      if (outBuf.length > 4_000) outBuf = outBuf.slice(-4_000);
+    });
+    child.stderr.on("data", (d) => {
+      errBuf += d.toString("utf8");
+      if (errBuf.length > 8_000) errBuf = errBuf.slice(-8_000);
+    });
+    child.on("error", () => resolve(null));
+    child.on("close", (code) => {
+      if (code !== 0) return resolve(null);
+      const s = String(outBuf || "").trim();
+      const n = Number.parseFloat(s);
+      if (!Number.isFinite(n) || n < 0) return resolve(null);
+      resolve(n);
+    });
+  });
+}
+
+const durationMetaInFlight = new Map(); // metaPath -> Promise<number|null>
+async function loadDurationMeta(metaPath) {
+  try {
+    const raw = await fsp.readFile(metaPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Object.prototype.hasOwnProperty.call(parsed, "durationSec")) return { hit: false, durationSec: null };
+    const v = parsed.durationSec;
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0) return { hit: true, durationSec: v };
+    return { hit: true, durationSec: null };
+  } catch {
+    return { hit: false, durationSec: null };
+  }
+}
+
+async function writeDurationMeta(metaPath, durationSec) {
+  const rec = {
+    durationSec: typeof durationSec === "number" && Number.isFinite(durationSec) && durationSec >= 0 ? durationSec : null,
+    computedAt: new Date().toISOString(),
+  };
+  const tmp = `${metaPath}.tmp`;
+  try {
+    await fsp.writeFile(tmp, JSON.stringify(rec, null, 2) + "\n", { mode: 0o600 });
+    await fsp.rename(tmp, metaPath);
+  } catch {
+    try {
+      await fsp.unlink(tmp);
+    } catch {
+      // Ignore.
+    }
+  }
+}
+
+async function ensureDurationMeta(absVideo, relPath, st) {
+  const key = cacheKeyForVideo(relPath, st);
+  const metaPath = path.join(CACHE_DIR, `${key}.meta.json`);
+  const cached = await loadDurationMeta(metaPath);
+  if (cached.hit) return { key, durationSec: cached.durationSec };
+
+  let p = durationMetaInFlight.get(metaPath) || null;
+  if (!p) {
+    p = (async () => {
+      const dur = await runFfprobeDurationSec(absVideo);
+      await writeDurationMeta(metaPath, dur);
+      return dur;
+    })()
+      .catch(() => {
+        // Best-effort cache a null so we don't retry forever.
+        writeDurationMeta(metaPath, null).catch(() => {});
+        return null;
+      })
+      .finally(() => {
+        durationMetaInFlight.delete(metaPath);
+      });
+    durationMetaInFlight.set(metaPath, p);
+  }
+  const durationSec = await p;
+  return { key, durationSec };
+}
+
 async function ensureThumb(absVideo, relPath) {
   const st = await fsp.stat(absVideo);
   const key = cacheKeyForVideo(relPath, st);
@@ -1097,6 +1193,43 @@ const server = http.createServer(async (req, res) => {
           unlockedCount: unlockedSet.size,
         },
       });
+    }
+
+    if (pathname === "/api/video-meta" && req.method === "GET") {
+      const ctx = authContext(req, url);
+      if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
+      const inactive = authInactiveReason(ctx);
+      if (inactive) return json(res, 403, { ok: false, error: inactive === "disabled" ? "account_disabled" : "access_expired" });
+
+      let relPath;
+      try {
+        relPath = safeRelPathFromClient(url.searchParams.get("path"));
+      } catch {
+        return json(res, 400, { ok: false, error: "bad_path" });
+      }
+
+      const abs = path.resolve(VIDEO_DIR, relPath);
+      if (!insideBase(VIDEO_DIR, abs)) return json(res, 403, { ok: false, error: "forbidden" });
+      const ext = path.extname(abs).toLowerCase();
+      if (!VIDEO_EXTS.has(ext)) return json(res, 400, { ok: false, error: "unsupported" });
+
+      let st;
+      try {
+        st = await fsp.stat(abs);
+        if (!st.isFile()) return json(res, 404, { ok: false, error: "not_found" });
+      } catch {
+        return json(res, 404, { ok: false, error: "not_found" });
+      }
+
+      // Content token access (no login): restrict meta to allowed videos if configured.
+      if (ctx.tokenInfo) {
+        const allowed = Array.isArray(ctx.tokenInfo.allowedVideos) ? ctx.tokenInfo.allowedVideos.map(String) : [];
+        if (allowed.length && !allowed.includes(relPath)) return json(res, 403, { ok: false, error: "forbidden" });
+      }
+
+      const meta = await ensureDurationMeta(abs, relPath, st);
+      const durationSec = typeof meta.durationSec === "number" && Number.isFinite(meta.durationSec) ? meta.durationSec : null;
+      return json(res, 200, { ok: true, path: relPath, durationSec });
     }
 
     if (pathname === "/api/unlock" && req.method === "POST") {
