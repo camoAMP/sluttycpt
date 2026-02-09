@@ -15,6 +15,8 @@ const VIDEO_DIR = path.resolve(process.env.VIDEO_DIR || path.join(process.cwd(),
 const INDEX_FILE = path.resolve(process.cwd(), "index.html");
 // Legacy shared token (pre-accounts). If provided and matched via ?token=..., it grants full access.
 const LEGACY_TOKEN = String(process.env.TOKEN || "");
+// Optional: link shown in the UI for "Buy" / checkout / WhatsApp.
+const BUY_URL = String(process.env.BUY_URL || "").trim();
 
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(process.cwd(), ".camfordick-data"));
 const CACHE_DIR = path.resolve(process.env.CACHE_DIR || path.join(process.cwd(), ".camfordick-cache"));
@@ -24,6 +26,37 @@ const SIGNUP_ENABLED = process.env.SIGNUP_ENABLED === "0" ? false : true;
 const SESSION_DAYS = Math.max(1, Math.min(365, Number(process.env.SESSION_DAYS || 30)));
 
 const VIDEO_EXTS = new Set([".mp4", ".webm", ".mkv", ".avi", ".mov", ".m4v"]);
+
+// Pricing + loyalty info is displayed by the UI (optional; no built-in payments).
+const PRICING_BUNDLES = [
+  { id: "10min", minutes: 10, priceZar: 100 },
+  { id: "15min", minutes: 15, priceZar: 150 },
+  { id: "30min", minutes: 30, priceZar: 250 },
+  { id: "45min", minutes: 45, priceZar: 350 },
+  { id: "1hour", minutes: 60, priceZar: 450 },
+];
+
+const LOYALTY_TIERS = [
+  { id: "bronze", name: "Bronze", minSpentZar: 500, discountPct: 10, perks: ["10% off next purchase"] },
+  { id: "silver", name: "Silver", minSpentZar: 2000, discountPct: 20, perks: ["20% off next", "Free 10min bundle"] },
+  { id: "gold", name: "Gold", minSpentZar: 5000, discountPct: 30, perks: ["30% off next", "Customs discount"] },
+];
+
+function normalizeMoneyZar(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x) || x < 0) return 0;
+  return Math.round(x);
+}
+
+function loyaltyForUser(user) {
+  const spentZar = normalizeMoneyZar(user && user.spentZar);
+  const points = Math.max(0, Math.floor(Number.isFinite(Number(user && user.points)) ? Number(user.points) : spentZar / 10));
+  let tier = null;
+  for (const t of LOYALTY_TIERS) {
+    if (spentZar >= t.minSpentZar) tier = t;
+  }
+  return { spentZar, points, tier };
+}
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(CACHE_DIR, { recursive: true });
@@ -196,8 +229,18 @@ function verifyContentToken(token) {
   if (!user) return null;
   
   // Find the specific token in the user's tokens
-  const userToken = (user.contentTokens || []).find(t => t.id === payload.tid);
-  if (!userToken || userToken.currentUses >= userToken.maxUses) return null;
+  const userToken = (user.contentTokens || []).find((t) => String(t && t.id) === payload.tid);
+  if (!userToken) return null;
+
+  const maxUses = Math.max(1, Math.floor(Number(userToken.maxUses || 0)));
+  const currentField = Math.max(0, Math.floor(Number(userToken.currentUses || 0)));
+  const usedLen = Array.isArray(userToken.usedVideos) ? userToken.usedVideos.length : 0;
+  const uses = Math.max(currentField, usedLen);
+  if (uses >= maxUses) return null;
+
+  // Normalize fields so callers/UI can rely on them.
+  userToken.maxUses = maxUses;
+  userToken.currentUses = uses;
   
   return { user, tokenInfo: userToken };
 }
@@ -327,6 +370,9 @@ async function listVideosRecursive(baseDir) {
     }
 
     for (const ent of entries) {
+      // Skip hidden files/folders (e.g. ".trashed-...", ".nomedia").
+      // Users often have these in phone-synced folders and they clutter the UI.
+      if (ent.name && ent.name.startsWith(".")) continue;
       if (ent.isDirectory()) {
         await walk(path.join(absDir, ent.name), `${relPrefix}${ent.name}/`);
         continue;
@@ -699,19 +745,54 @@ function authContext(req, url) {
   const header = String(req.headers.authorization || "");
   const bearer = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
   const q = String(url.searchParams.get("auth") || "").trim();
-  const tok = bearer || q;
-  if (!tok) {
-    // Check for content token
-    const contentToken = String(url.searchParams.get("contentToken") || "").trim();
-    if (contentToken) {
-      return verifyContentToken(contentToken);
-    }
-    return null;
-  }
+	  const tok = bearer || q;
+	  if (!tok) {
+	    // Check for content token
+	    const contentToken = String(url.searchParams.get("contentToken") || "").trim();
+	    if (contentToken) {
+	      const ct = verifyContentToken(contentToken);
+	      if (!ct) return null;
+	      return { kind: "contentToken", role: "token-user", user: ct.user, tokenInfo: ct.tokenInfo };
+	    }
+	    return null;
+	  }
 
   const user = verifyAuthToken(tok);
   if (!user) return null;
   return { kind: "user", role: user.role, user };
+}
+
+function tokenAllowsVideo(tokenInfo, relPath) {
+  const allowed = tokenInfo && tokenInfo.allowedVideos;
+  if (!Array.isArray(allowed) || allowed.length === 0) return true;
+  return allowed.map(String).includes(String(relPath));
+}
+
+function tokenUses(tokenInfo) {
+  if (!tokenInfo) return { current: 0, max: 0 };
+  const max = Math.max(1, Math.floor(Number(tokenInfo.maxUses || 0)));
+  const currentField = Math.max(0, Math.floor(Number(tokenInfo.currentUses || 0)));
+  const usedLen = Array.isArray(tokenInfo.usedVideos) ? tokenInfo.usedVideos.length : 0;
+  const current = Math.max(currentField, usedLen);
+  return { current, max };
+}
+
+async function consumeTokenVideoUse(user, tokenInfo, relPath) {
+  if (!user || !tokenInfo) return { ok: false, error: "bad_token" };
+  const used = Array.isArray(tokenInfo.usedVideos) ? tokenInfo.usedVideos : [];
+  const p = String(relPath || "");
+  if (!p) return { ok: false, error: "bad_path" };
+
+  const { current, max } = tokenUses(tokenInfo);
+  if (used.includes(p)) return { ok: true, consumed: false, current, max };
+  if (current >= max) return { ok: false, error: "token_exhausted", current, max };
+
+  used.push(p);
+  tokenInfo.usedVideos = used;
+  tokenInfo.currentUses = current + 1;
+  tokenInfo.lastUsedAt = new Date().toISOString();
+  await queueSaveUsers();
+  return { ok: true, consumed: true, current: current + 1, max };
 }
 
 // Create the HTTP server with improved connection handling
@@ -742,6 +823,12 @@ const server = http.createServer(async (req, res) => {
         videoDirName: path.basename(VIDEO_DIR),
         videoDir: VIDEO_DIR,
         exts: [...VIDEO_EXTS].map((e) => e.slice(1)),
+        buyUrl: BUY_URL || null,
+        pricing: {
+          currency: "ZAR",
+          bundles: PRICING_BUNDLES,
+          loyaltyTiers: LOYALTY_TIERS,
+        },
         auth: {
           legacyToken: LEGACY_TOKEN ? true : false,
           users: true,
@@ -749,7 +836,7 @@ const server = http.createServer(async (req, res) => {
           previewSeconds: PREVIEW_SECONDS,
         },
         now: new Date().toISOString(),
-        bundles: ['10min', '15min', '30min', '45min', '1hour'] // Available bundle types
+        bundles: PRICING_BUNDLES.map((b) => b.id), // Available bundle types
       });
     }
 
@@ -777,6 +864,8 @@ const server = http.createServer(async (req, res) => {
         quota: role === "admin" ? -1 : 0,
         unlocked: [],
         contentTokens: [], // Initialize content tokens array
+        spentZar: 0,
+        points: 0,
         createdAt: new Date().toISOString(),
       };
       usersDb.users.push(user);
@@ -805,7 +894,32 @@ const server = http.createServer(async (req, res) => {
       const ctx = authContext(req, url);
       if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
       if (ctx.kind === "legacy") return json(res, 200, { ok: true, user: { username: "legacy-token", role: "admin", quota: -1, unlockedCount: -1 } });
+      if (ctx.kind === "contentToken") {
+        const ti = ctx.tokenInfo || {};
+        const maxUses = Math.max(1, Math.floor(Number(ti.maxUses || 0)));
+        const usesField = Math.max(0, Math.floor(Number(ti.currentUses || 0)));
+        const usedLen = Array.isArray(ti.usedVideos) ? ti.usedVideos.length : 0;
+        const uses = Math.max(usesField, usedLen);
+        return json(res, 200, {
+          ok: true,
+          user: {
+            username: String(ti.name || "token"),
+            role: "token-user",
+            quota: -1,
+            unlockedCount: -1,
+            token: {
+              id: String(ti.id || ""),
+              name: String(ti.name || ""),
+              maxUses,
+              currentUses: uses,
+              validUntil: ti.validUntil || undefined,
+              bundleType: ti.bundleType || undefined,
+            },
+          },
+        });
+      }
       const u = ctx.user;
+      const loy = loyaltyForUser(u);
       return json(res, 200, {
         ok: true,
         user: {
@@ -813,7 +927,12 @@ const server = http.createServer(async (req, res) => {
           role: u.role,
           quota: u.quota,
           unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
-          contentTokens: u.contentTokens || []
+          contentTokens: u.contentTokens || [],
+          spentZar: loy.spentZar,
+          points: loy.points,
+          tier: loy.tier
+            ? { id: loy.tier.id, name: loy.tier.name, discountPct: loy.tier.discountPct, perks: loy.tier.perks }
+            : null,
         },
       });
     }
@@ -824,25 +943,35 @@ const server = http.createServer(async (req, res) => {
       
       const videos = await listVideosRecursive(VIDEO_DIR);
       
-      // If it's a content token request, filter videos accordingly
-      if (ctx.tokenInfo) {
-        const allowedVideos = ctx.tokenInfo.allowedVideos;
-        if (allowedVideos && allowedVideos.length > 0) {
-          const allowedSet = new Set(allowedVideos);
-          const filteredVideos = videos.filter(v => allowedSet.has(v.path));
-          
-          // Increment usage counter for the token
-          const user = ctx.user;
-          const token = ctx.tokenInfo;
-          const tokenIndex = user.contentTokens.findIndex(t => t.id === token.id);
-          if (tokenIndex !== -1) {
-            user.contentTokens[tokenIndex].currentUses++;
-            await queueSaveUsers();
-          }
-          
-          const list = filteredVideos.map((v) => ({ ...v, unlocked: true }));
-          return json(res, 200, { ok: true, count: list.length, videos: list, user: { role: "token-user", quota: -1, unlockedCount: -1 } });
-        }
+      // Content-token access: list allowed videos, but do not burn usage on listing.
+      if (ctx.kind === "contentToken") {
+        const ti = ctx.tokenInfo || {};
+        const allowed = Array.isArray(ti.allowedVideos) ? ti.allowedVideos.map(String) : [];
+        const allowedSet = allowed.length > 0 ? new Set(allowed) : null;
+        const filteredVideos = allowedSet ? videos.filter((v) => allowedSet.has(v.path)) : videos;
+        const list = filteredVideos.map((v) => ({ ...v, unlocked: true }));
+        const maxUses = Math.max(1, Math.floor(Number(ti.maxUses || 0)));
+        const usesField = Math.max(0, Math.floor(Number(ti.currentUses || 0)));
+        const usedLen = Array.isArray(ti.usedVideos) ? ti.usedVideos.length : 0;
+        const uses = Math.max(usesField, usedLen);
+        return json(res, 200, {
+          ok: true,
+          count: list.length,
+          videos: list,
+          user: {
+            role: "token-user",
+            quota: -1,
+            unlockedCount: -1,
+            token: {
+              id: String(ti.id || ""),
+              name: String(ti.name || "token"),
+              maxUses,
+              currentUses: uses,
+              validUntil: ti.validUntil || undefined,
+              bundleType: ti.bundleType || undefined,
+            },
+          },
+        });
       }
       
       if (ctx.kind === "legacy" || ctx.role === "admin") {
@@ -909,9 +1038,22 @@ const server = http.createServer(async (req, res) => {
       if (!ctx || ctx.kind !== "user") return json(res, 401, { ok: false, error: "unauthorized" });
       if (ctx.user.role !== "admin") return json(res, 403, { ok: false, error: "forbidden" });
       
+      const tokens = Array.isArray(ctx.user.contentTokens) ? ctx.user.contentTokens : [];
       return json(res, 200, {
         ok: true,
-        contentTokens: ctx.user.contentTokens || []
+        contentTokens: tokens.map((t) => {
+          const maxUses = Math.max(1, Math.floor(Number(t && t.maxUses || 0)));
+          const usedVideos = Array.isArray(t && t.usedVideos) ? t.usedVideos : [];
+          const currentField = Math.max(0, Math.floor(Number(t && t.currentUses || 0)));
+          const currentUses = Math.max(currentField, usedVideos.length);
+          return {
+            ...t,
+            maxUses,
+            currentUses,
+            usedVideos,
+            priceZar: normalizeMoneyZar(t && t.priceZar),
+          };
+        }),
       });
     }
 
@@ -922,7 +1064,7 @@ const server = http.createServer(async (req, res) => {
       if (ctx.user.role !== "admin") return json(res, 403, { ok: false, error: "forbidden" });
       
       const body = await readJson(req).catch(() => null);
-      const { name, maxUses, validUntil, allowedVideos, bundleType } = body || {};
+      const { name, maxUses, validUntil, allowedVideos, bundleType, priceZar } = body || {};
       
       // If bundleType is specified, create a bundle instead of using allowedVideos
       let finalAllowedVideos = allowedVideos;
@@ -944,12 +1086,15 @@ const server = http.createServer(async (req, res) => {
       
       ctx.user.contentTokens.push({
         id: tokenData.tokenId,
+        token: tokenData.token,
         name: tokenData.name,
         maxUses: tokenData.maxUses,
         currentUses: 0,
+        usedVideos: [],
         validUntil: tokenData.validUntil,
         allowedVideos: tokenData.allowedVideos,
         bundleType: tokenData.bundleType,
+        priceZar: normalizeMoneyZar(priceZar),
         createdAt: new Date().toISOString()
       });
       
@@ -963,7 +1108,8 @@ const server = http.createServer(async (req, res) => {
         maxUses: tokenData.maxUses,
         validUntil: tokenData.validUntil,
         allowedVideos: tokenData.allowedVideos,
-        bundleType: tokenData.bundleType
+        bundleType: tokenData.bundleType,
+        priceZar: normalizeMoneyZar(priceZar),
       });
     }
 
@@ -1029,16 +1175,51 @@ const server = http.createServer(async (req, res) => {
       if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
       if (!(ctx.kind === "legacy" || ctx.role === "admin")) return json(res, 403, { ok: false, error: "forbidden" });
       const users = usersDb.users
-        .map((u) => ({
-          username: u.username,
-          role: u.role,
-          quota: u.quota,
-          unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
-          createdAt: u.createdAt,
-          contentTokens: u.contentTokens ? u.contentTokens.length : 0
-        }))
+        .map((u) => {
+          const loy = loyaltyForUser(u);
+          return {
+            username: u.username,
+            role: u.role,
+            quota: u.quota,
+            unlockedCount: Array.isArray(u.unlocked) ? u.unlocked.length : 0,
+            createdAt: u.createdAt,
+            contentTokens: Array.isArray(u.contentTokens) ? u.contentTokens.length : 0,
+            spentZar: loy.spentZar,
+            points: loy.points,
+            tier: loy.tier ? { id: loy.tier.id, name: loy.tier.name, discountPct: loy.tier.discountPct } : null,
+          };
+        })
         .sort((a, b) => a.username.localeCompare(b.username));
       return json(res, 200, { ok: true, users });
+    }
+
+    if (pathname === "/api/admin/set-loyalty" && req.method === "POST") {
+      const ctx = authContext(req, url);
+      if (!ctx) return json(res, 401, { ok: false, error: "unauthorized" });
+      if (!(ctx.kind === "legacy" || ctx.role === "admin")) return json(res, 403, { ok: false, error: "forbidden" });
+      const body = await readJson(req).catch(() => null);
+      const username = cleanUsername(body && body.username);
+      const spentZarRaw = body && body.spentZar;
+      const pointsRaw = body && body.points;
+      const hasSpent = spentZarRaw !== undefined && spentZarRaw !== null && spentZarRaw !== "";
+      const hasPoints = pointsRaw !== undefined && pointsRaw !== null && pointsRaw !== "";
+      if (!username || (!hasSpent && !hasPoints)) return json(res, 400, { ok: false, error: "bad_request" });
+
+      const user = usersDb.users.find((u) => u.username.toLowerCase() === username.toLowerCase());
+      if (!user) return json(res, 404, { ok: false, error: "not_found" });
+
+      if (hasSpent) {
+        const spent = normalizeMoneyZar(spentZarRaw);
+        user.spentZar = spent;
+      }
+      if (hasPoints) {
+        const pts = Math.max(0, Math.floor(Number(pointsRaw)));
+        if (!Number.isFinite(pts) || pts > 1_000_000_000) return json(res, 400, { ok: false, error: "bad_request" });
+        user.points = pts;
+      }
+
+      await queueSaveUsers();
+      return json(res, 200, { ok: true });
     }
 
     if (pathname === "/api/admin/set-quota" && req.method === "POST") {
@@ -1070,6 +1251,9 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         return text(res, 400, `${err.message}\n`);
       }
+      if (ctx.kind === "contentToken" && !tokenAllowsVideo(ctx.tokenInfo, relDecoded)) {
+        return text(res, 403, "forbidden\n");
+      }
       const thumb = await ensureThumb(abs, relDecoded);
       const buf = await fsp.readFile(thumb);
       res.writeHead(200, {
@@ -1096,6 +1280,9 @@ const server = http.createServer(async (req, res) => {
       } catch (err) {
         return text(res, 400, `${err.message}\n`);
       }
+      if (ctx.kind === "contentToken" && !tokenAllowsVideo(ctx.tokenInfo, relDecoded)) {
+        return text(res, 403, "forbidden\n");
+      }
       const prev = await ensurePreview(abs, relDecoded);
       return serveFile(req, res, prev, { contentType: "video/mp4" });
     }
@@ -1114,20 +1301,16 @@ const server = http.createServer(async (req, res) => {
         return text(res, 400, `${err.message}\n`);
       }
 
-      // If using a content token, check if this video is allowed
-      if (ctx.tokenInfo) {
-        const allowedVideos = ctx.tokenInfo.allowedVideos;
-        if (allowedVideos && allowedVideos.length > 0 && !allowedVideos.includes(relDecoded)) {
-          return text(res, 403, "Video not allowed by token\n");
+      if (ctx.kind === "contentToken") {
+        if (!tokenAllowsVideo(ctx.tokenInfo, relDecoded)) {
+          return text(res, 403, "forbidden\n");
         }
-        
-        // Increment usage counter for the token
-        const user = ctx.user;
-        const token = ctx.tokenInfo;
-        const tokenIndex = user.contentTokens.findIndex(t => t.id === token.id);
-        if (tokenIndex !== -1) {
-          user.contentTokens[tokenIndex].currentUses++;
-          await queueSaveUsers();
+        // Only count a "use" the first time a given video is accessed by this token.
+        if (req.method !== "HEAD") {
+          const r = await consumeTokenVideoUse(ctx.user, ctx.tokenInfo, relDecoded);
+          if (!r.ok) {
+            return text(res, 403, r.error === "token_exhausted" ? "token_exhausted\n" : "forbidden\n");
+          }
         }
       }
       // Legacy token or admin user can access everything.

@@ -123,6 +123,13 @@
               class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90 transition hover:bg-black/40"
               >Admin</a
             >
+            <button
+              id="pricingBtn"
+              type="button"
+              class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90 transition hover:bg-black/40"
+            >
+              Pricing
+            </button>
             <span
               id="supportPill"
               class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
@@ -263,6 +270,15 @@
               title="Create a new account on the connected PC server"
             >
               Sign Up
+            </button>
+
+            <button
+              id="useTokenBtn"
+              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+              type="button"
+              title="Use an access token instead of an account"
+            >
+              Use Token
             </button>
 
             <button
@@ -595,6 +611,53 @@
     </div>
 
     <div
+      id="pricingModal"
+      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 px-4 py-10 text-zinc-100 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pricingTitle"
+    >
+      <div class="w-full max-w-2xl rounded-2xl border border-white/10 bg-panel/70 p-6 glow-panel">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="font-display text-lg font-semibold tracking-wide" id="pricingTitle">Bundles + Loyalty</div>
+            <div class="mt-1 text-sm text-zinc-300/90" id="pricingSubtitle">
+              Pricing is shown in ZAR. You can buy access and receive an access token.
+            </div>
+          </div>
+          <button
+            id="pricingCloseBtn"
+            type="button"
+            class="neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform"
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full min-w-[560px] border-separate border-spacing-y-2 text-left text-sm">
+            <thead class="text-xs text-zinc-400">
+              <tr>
+                <th class="px-3">Duration</th>
+                <th class="px-3">Price</th>
+                <th class="px-3">Per minute</th>
+                <th class="px-3 text-right">Buy</th>
+              </tr>
+            </thead>
+            <tbody id="pricingTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+          <div class="font-display text-sm font-semibold tracking-wide text-white/90">Loyalty tiers</div>
+          <div class="mt-2 text-sm text-zinc-300/90" id="loyaltyBody"></div>
+        </div>
+
+        <div class="mt-4 text-xs text-zinc-400" id="pricingFooter"></div>
+      </div>
+    </div>
+
+    <div
       id="toast"
       class="pointer-events-none fixed bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs text-zinc-200 shadow-[0_0_30px_rgba(168,85,247,0.25)] backdrop-blur"
     ></div>
@@ -604,6 +667,18 @@
 
       const VIDEO_EXTS = new Set(["mp4", "webm", "mkv", "avi", "mov", "m4v"]);
       const THUMB_PREVIEW_EXTS = new Set(["mp4", "webm", "mov", "m4v"]);
+      const DEFAULT_PRICING_BUNDLES = [
+        { id: "10min", minutes: 10, priceZar: 100 },
+        { id: "15min", minutes: 15, priceZar: 150 },
+        { id: "30min", minutes: 30, priceZar: 250 },
+        { id: "45min", minutes: 45, priceZar: 350 },
+        { id: "1hour", minutes: 60, priceZar: 450 },
+      ];
+      const DEFAULT_LOYALTY_TIERS = [
+        { id: "bronze", name: "Bronze", minSpentZar: 500, discountPct: 10, perks: ["10% off next purchase"] },
+        { id: "silver", name: "Silver", minSpentZar: 2000, discountPct: 20, perks: ["20% off next", "Free 10min bundle"] },
+        { id: "gold", name: "Gold", minSpentZar: 5000, discountPct: 30, perks: ["30% off next", "Customs discount"] },
+      ];
 
       /**
        * @typedef {{source:"local",path:string,name:string,ext:string,handle:FileSystemFileHandle}} LocalVideoEntry
@@ -618,6 +693,7 @@
         serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
         serverToken: "",
         authToken: "",
+        contentToken: "",
         me: null, // from /api/me or /api/videos summary
         dirHandle: null,
         videos: /** @type {VideoEntry[]} */ ([]),
@@ -641,6 +717,7 @@
         supportPill: document.getElementById("supportPill"),
         adminLink: document.getElementById("adminLink"),
         homeLink: document.getElementById("homeLink"),
+        pricingBtn: document.getElementById("pricingBtn"),
         folderControlsRow: document.getElementById("folderControlsRow"),
         serverConnectRow: document.getElementById("serverConnectRow"),
         statusGrid: document.getElementById("statusGrid"),
@@ -648,6 +725,11 @@
         ageGate: document.getElementById("ageGate"),
         ageYesBtn: document.getElementById("ageYesBtn"),
         ageNoBtn: document.getElementById("ageNoBtn"),
+        pricingModal: document.getElementById("pricingModal"),
+        pricingCloseBtn: document.getElementById("pricingCloseBtn"),
+        pricingTableBody: document.getElementById("pricingTableBody"),
+        loyaltyBody: document.getElementById("loyaltyBody"),
+        pricingFooter: document.getElementById("pricingFooter"),
         selectFolderBtn: document.getElementById("selectFolderBtn"),
         refreshBtn: document.getElementById("refreshBtn"),
         streamToggleBtn: document.getElementById("streamToggleBtn"),
@@ -662,6 +744,7 @@
         authPassInput: document.getElementById("authPassInput"),
         signInBtn: document.getElementById("signInBtn"),
         signUpBtn: document.getElementById("signUpBtn"),
+        useTokenBtn: document.getElementById("useTokenBtn"),
         signOutBtn: document.getElementById("signOutBtn"),
         authPill: document.getElementById("authPill"),
         authErrorText: document.getElementById("authErrorText"),
@@ -828,6 +911,130 @@
         setMainUi();
       }
 
+      function openPricing() {
+        renderPricing();
+        if (!el.pricingModal) return;
+        el.pricingModal.classList.remove("hidden");
+        el.pricingModal.classList.add("flex");
+      }
+
+      function closePricing() {
+        if (!el.pricingModal) return;
+        el.pricingModal.classList.add("hidden");
+        el.pricingModal.classList.remove("flex");
+      }
+
+      function fmtZar(n) {
+        const x = Math.max(0, Math.round(Number(n) || 0));
+        return `R${x}`;
+      }
+
+      function buildBuyUrl(template, bundle) {
+        let raw = String(template || "").trim();
+        if (!raw) return "";
+        if (!/^https?:\/\//i.test(raw) && !raw.startsWith("/")) raw = `https://${raw}`;
+
+        const meUser = state.me && state.me.username ? String(state.me.username) : "";
+        const replaced = raw
+          .replaceAll("{bundle}", encodeURIComponent(String(bundle.id)))
+          .replaceAll("{minutes}", encodeURIComponent(String(bundle.minutes)))
+          .replaceAll("{price}", encodeURIComponent(String(bundle.priceZar)))
+          .replaceAll("{user}", encodeURIComponent(meUser));
+
+        // If no placeholders were used, append query params.
+        if (replaced === raw) {
+          try {
+            const u = new URL(raw, window.location.origin);
+            u.searchParams.set("bundle", String(bundle.id));
+            u.searchParams.set("minutes", String(bundle.minutes));
+            u.searchParams.set("priceZar", String(bundle.priceZar));
+            if (meUser) u.searchParams.set("user", meUser);
+            return u.toString();
+          } catch {
+            return raw;
+          }
+        }
+        return replaced;
+      }
+
+      function renderPricing() {
+        const info = state.serverInfo || {};
+        const pricing = (info && info.pricing) || {};
+        const bundles = Array.isArray(pricing.bundles) ? pricing.bundles : DEFAULT_PRICING_BUNDLES;
+        const tiers = Array.isArray(pricing.loyaltyTiers) ? pricing.loyaltyTiers : DEFAULT_LOYALTY_TIERS;
+        const buyUrl = String(info.buyUrl || pricing.buyUrl || "").trim();
+
+        if (el.pricingTableBody) el.pricingTableBody.innerHTML = "";
+        for (const b of bundles) {
+          const id = String(b && b.id || "");
+          const minutes = Math.max(1, Math.floor(Number(b && b.minutes || 0)));
+          const priceZar = Math.max(0, Math.round(Number(b && b.priceZar || 0)));
+          if (!id || !minutes) continue;
+
+          const perMin = priceZar / minutes;
+
+          const tr = document.createElement("tr");
+          tr.className = "rounded-xl border border-white/10 bg-black/20";
+
+          const td1 = document.createElement("td");
+          td1.className = "px-3 py-2 font-mono text-xs text-zinc-100";
+          td1.textContent = `${minutes} min`;
+
+          const td2 = document.createElement("td");
+          td2.className = "px-3 py-2 font-mono text-xs text-zinc-100";
+          td2.textContent = fmtZar(priceZar);
+
+          const td3 = document.createElement("td");
+          td3.className = "px-3 py-2 font-mono text-xs text-zinc-300";
+          td3.textContent = `R${perMin.toFixed(2)}/min`;
+
+          const td4 = document.createElement("td");
+          td4.className = "px-3 py-2 text-right";
+          if (buyUrl) {
+            const a = document.createElement("a");
+            a.className =
+              "neon-btn inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-3 py-2 font-display text-xs font-semibold tracking-wide text-white transition will-change-transform";
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.href = buildBuyUrl(buyUrl, { id, minutes, priceZar });
+            a.textContent = "Buy";
+            td4.appendChild(a);
+          } else {
+            td4.className += " font-mono text-xs text-zinc-500";
+            td4.textContent = "Ask admin";
+          }
+
+          tr.appendChild(td1);
+          tr.appendChild(td2);
+          tr.appendChild(td3);
+          tr.appendChild(td4);
+          if (el.pricingTableBody) el.pricingTableBody.appendChild(tr);
+        }
+
+        if (el.loyaltyBody) {
+          const parts = [];
+          for (const t of tiers) {
+            const name = String(t && t.name || "");
+            const minSpent = Math.max(0, Math.round(Number(t && t.minSpentZar || 0)));
+            const pct = Math.max(0, Math.round(Number(t && t.discountPct || 0)));
+            const perks = Array.isArray(t && t.perks) ? t.perks.map(String).filter(Boolean) : [];
+            if (!name) continue;
+            parts.push(`<div class="mb-2"><span class="font-semibold text-zinc-100">${name}</span> (R${minSpent}+): ${pct}% off next${perks.length ? ` • ${perks.join(" • ")}` : ""}</div>`);
+          }
+          parts.push("<div class=\"mt-2 text-xs text-zinc-400\">Points: 1 point per R10 spent. Redeem 50 points for a free bundle (admin-assisted).</div>");
+          el.loyaltyBody.innerHTML = parts.join("");
+        }
+
+        if (el.pricingFooter) {
+          const tierName = state.me && state.me.tier && state.me.tier.name ? String(state.me.tier.name) : "";
+          const pts = state.me && typeof state.me.points === "number" ? state.me.points : null;
+          const extras = [];
+          if (tierName) extras.push(`Your tier: ${tierName}`);
+          if (pts !== null) extras.push(`Points: ${pts}`);
+          el.pricingFooter.textContent = `${extras.length ? extras.join(" • ") + " • " : ""}After payment, you will receive an access token. Use “Use Token” to paste it.`;
+        }
+      }
+
       function setAuthUi() {
         const usingServer = state.mode === "server";
         const me = state.me;
@@ -836,6 +1043,7 @@
           el.authPill.textContent = "Local mode";
           el.signInBtn.classList.remove("hidden");
           el.signUpBtn.classList.remove("hidden");
+          el.useTokenBtn.classList.add("hidden");
           el.signOutBtn.classList.add("hidden");
           el.creditsPill.classList.add("hidden");
           el.adminPanel.classList.add("hidden");
@@ -849,6 +1057,7 @@
           el.authPill.textContent = "Signed out";
           el.signInBtn.classList.remove("hidden");
           el.signUpBtn.classList.remove("hidden");
+          el.useTokenBtn.classList.remove("hidden");
           el.signOutBtn.classList.add("hidden");
           el.creditsPill.classList.add("hidden");
           el.adminPanel.classList.add("hidden");
@@ -859,10 +1068,28 @@
         }
 
         const role = String(me.role || "user");
+        if (role === "token-user") {
+          const token = me.token || null;
+          const name = token && token.name ? String(token.name) : me.username ? String(me.username) : "token";
+          const cur = token && typeof token.currentUses === "number" ? token.currentUses : 0;
+          const max = token && typeof token.maxUses === "number" ? token.maxUses : 0;
+          el.authPill.textContent = max ? `Token: ${name} (${cur}/${max})` : `Token: ${name}`;
+          el.signInBtn.classList.add("hidden");
+          el.signUpBtn.classList.add("hidden");
+          el.useTokenBtn.classList.add("hidden");
+          el.signOutBtn.classList.remove("hidden");
+          el.creditsPill.classList.add("hidden");
+          el.adminPanel.classList.add("hidden");
+          el.contentTokensPanel.classList.add("hidden");
+          setAdminMsg("");
+          setMainUi();
+          return;
+        }
         const who = me.username ? me.username : role === "admin" ? "admin" : "user";
         el.authPill.textContent = role === "admin" ? `Signed in: ${who} (admin)` : `Signed in: ${who}`;
         el.signInBtn.classList.add("hidden");
         el.signUpBtn.classList.add("hidden");
+        el.useTokenBtn.classList.add("hidden");
         el.signOutBtn.classList.remove("hidden");
 
         el.creditsPill.classList.remove("hidden");
@@ -1123,6 +1350,8 @@
         state.serverToken = token;
         state.me = null;
         restoreAuthTokenForBase(base);
+        restoreContentTokenForBase(base);
+        if (state.authToken) state.contentToken = "";
         state.dirHandle = null;
         setSupportPill();
         setServerFormUi();
@@ -1227,6 +1456,7 @@
         try {
           const j = await apiJson("/api/auth/login", { method: "POST", body: { username, password } });
           persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          persistContentTokenForBase(state.serverBase || window.location.origin, "");
           el.authPassInput.value = "";
           try {
             localStorage.setItem("camfordick_last_username", username);
@@ -1264,6 +1494,7 @@
         try {
           const j = await apiJson("/api/auth/signup", { method: "POST", body: { username, password } });
           persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          persistContentTokenForBase(state.serverBase || window.location.origin, "");
           el.authPassInput.value = "";
           try {
             localStorage.setItem("camfordick_last_username", username);
@@ -1281,8 +1512,54 @@
         }
       }
 
+      function extractContentToken(raw) {
+        const s = String(raw || "").trim();
+        if (!s) return "";
+        const m = /(?:^|[?&])contentToken=([^&]+)/.exec(s);
+        if (m && m[1]) {
+          try {
+            return decodeURIComponent(m[1]).trim();
+          } catch {
+            return String(m[1]).trim();
+          }
+        }
+        const m2 = /(?:^|[?&])ct=([^&]+)/.exec(s);
+        if (m2 && m2[1]) {
+          try {
+            return decodeURIComponent(m2[1]).trim();
+          } catch {
+            return String(m2[1]).trim();
+          }
+        }
+        return s;
+      }
+
+      async function useToken() {
+        setError("");
+        const ok = await ensureConnectedServer();
+        if (!ok) return;
+        const raw = window.prompt("Paste access token (or a token link):");
+        if (!raw) return;
+        const tok = extractContentToken(raw);
+        if (!tok || !tok.includes(".")) {
+          setError("Invalid token.");
+          return;
+        }
+
+        persistAuthTokenForBase(state.serverBase || window.location.origin, "");
+        persistContentTokenForBase(state.serverBase || window.location.origin, tok);
+        state.me = null;
+        setAuthUi();
+        resetLibraryState();
+        renderLibrary();
+        await refreshMe();
+        await refreshLibrary({ reason: "token", toastOnChange: false });
+        setStatus("Token active");
+      }
+
       function signOut() {
         persistAuthTokenForBase(state.serverBase || window.location.origin, "");
+        persistContentTokenForBase(state.serverBase || window.location.origin, "");
         state.me = null;
         setAuthUi();
         resetLibraryState();
@@ -1479,6 +1756,36 @@
         }
       }
 
+      function contentTokenStorageKeyForBase(base) {
+        let host = "";
+        try {
+          host = base ? new URL(base).host : window.location.host;
+        } catch {
+          host = window.location.host;
+        }
+        return `camfordick_content_token_${host}`;
+      }
+
+      function restoreContentTokenForBase(base) {
+        try {
+          state.contentToken = localStorage.getItem(contentTokenStorageKeyForBase(base)) || "";
+        } catch {
+          state.contentToken = "";
+        }
+      }
+
+      function persistContentTokenForBase(base, token) {
+        const tok = String(token || "").trim();
+        state.contentToken = tok;
+        try {
+          const key = contentTokenStorageKeyForBase(base);
+          if (tok) localStorage.setItem(key, tok);
+          else localStorage.removeItem(key);
+        } catch {
+          // Ignore.
+        }
+      }
+
       async function apiJson(pathname, { method = "GET", body = null } = {}) {
         /** @type {RequestInit} */
         const init = { method, cache: "no-store" };
@@ -1524,7 +1831,11 @@
             role: String(j.user.role || ""),
             quota: typeof j.user.quota === "number" ? j.user.quota : 0,
             unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
+            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
+            token: j.user.token || null,
+            spentZar: typeof j.user.spentZar === "number" ? j.user.spentZar : undefined,
+            points: typeof j.user.points === "number" ? j.user.points : undefined,
+            tier: j.user.tier || null,
           };
           setAuthUi();
           if (String(state.me.role) === "admin") {
@@ -1587,7 +1898,15 @@
             copyBtn.className = "neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-1 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform";
             copyBtn.textContent = "Copy";
             copyBtn.onclick = () => {
-              const tokenUrl = `${window.location.origin}?server=${encodeURIComponent(state.serverBase)}&contentToken=${encodeURIComponent(token.token)}`;
+              if (!token.token) {
+                toast("Token value missing (create a new token).");
+                return;
+              }
+              const origin = window.location.origin;
+              const sameOrigin = !state.serverBase || state.serverBase === origin;
+              const tokenUrl = sameOrigin
+                ? `${origin}?contentToken=${encodeURIComponent(token.token)}`
+                : `${origin}?server=${encodeURIComponent(state.serverBase)}&contentToken=${encodeURIComponent(token.token)}`;
               navigator.clipboard.writeText(tokenUrl).then(() => {
                 toast("Token link copied to clipboard!");
               });
@@ -1783,6 +2102,7 @@
         const u = new URL(pathname, base);
         if (state.serverToken) u.searchParams.set("token", state.serverToken);
         if (state.authToken) u.searchParams.set("auth", state.authToken);
+        else if (state.contentToken) u.searchParams.set("contentToken", state.contentToken);
         return u.toString();
       }
 
@@ -1827,7 +2147,11 @@
             role: String(j.user.role || ""),
             quota: typeof j.user.quota === "number" ? j.user.quota : 0,
             unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
+            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
+            token: j.user.token || null,
+            spentZar: typeof j.user.spentZar === "number" ? j.user.spentZar : undefined,
+            points: typeof j.user.points === "number" ? j.user.points : undefined,
+            tier: j.user.tier || null,
           };
           setAuthUi();
         }
@@ -2070,24 +2394,11 @@
         try {
           let url;
           if (entry.source === "server") {
-            if (entry.unlocked) {
-              url = serverMediaUrl(entry.path);
-            } else {
-              // Check if we have a valid content token that allows access to this video
-              const hasValidToken = state.me && state.me.contentTokens && 
-                state.me.contentTokens.some(token => {
-                  // Check if token is valid and allows this video
-                  return token.currentUses < token.maxUses && 
-                         (!token.allowedVideos || token.allowedVideos.includes(entry.path));
-                });
-              
-              if (!hasValidToken) {
-                setError("Access denied. Video is locked.");
-                return;
-              }
-              
-              url = serverMediaUrl(entry.path);
+            if (!entry.unlocked) {
+              setError("Locked. Use Preview or Unlock.");
+              return;
             }
+            url = serverMediaUrl(entry.path);
           } else {
             url = await getLocalObjectUrl(entry);
           }
@@ -2170,6 +2481,18 @@
           el.adminLink.classList.toggle("hidden", IS_ADMIN_ROUTE);
         }
 
+        // Pricing modal
+        if (el.pricingBtn) el.pricingBtn.addEventListener("click", openPricing);
+        if (el.pricingCloseBtn) el.pricingCloseBtn.addEventListener("click", closePricing);
+        if (el.pricingModal) {
+          el.pricingModal.addEventListener("click", (e) => {
+            if (e.target === el.pricingModal) closePricing();
+          });
+        }
+        document.addEventListener("keydown", (e) => {
+          if (e && e.key === "Escape") closePricing();
+        });
+
         // 18+ gate (stored per-browser).
         try {
           const ok = localStorage.getItem("camfordick_age_ok") === "1";
@@ -2250,6 +2573,7 @@
         el.disconnectServerBtn.addEventListener("click", disconnectServer);
         el.signInBtn.addEventListener("click", signIn);
         el.signUpBtn.addEventListener("click", signUp);
+        el.useTokenBtn.addEventListener("click", useToken);
         el.signOutBtn.addEventListener("click", signOut);
         el.adminSetQuotaBtn.addEventListener("click", adminSetQuota);
         el.adminRefreshUsersBtn.addEventListener("click", refreshAdminUsers);
@@ -2281,6 +2605,11 @@
         const u = new URL(window.location);
         const serverParam = u.searchParams.get("server");
         const tokenParam = u.searchParams.get("token");
+        const contentTokenParam = u.searchParams.get("contentToken") || u.searchParams.get("ct");
+        if (contentTokenParam) {
+          const baseForStorage = serverParam ? normalizeServerBase(serverParam) : window.location.origin;
+          persistContentTokenForBase(baseForStorage || window.location.origin, contentTokenParam);
+        }
         if (serverParam) {
           // Don't await to avoid blocking UI
           connectServer(serverParam, tokenParam || "", { remember: false });
