@@ -327,7 +327,7 @@ function normalizeReturnTo(raw, fallbackBase) {
   }
   if (u.protocol !== "http:" && u.protocol !== "https:") return base ? `${base}/` : "/";
 
-  const allowed = new Set([u.origin, ...ALLOWED_RETURN_ORIGINS.map(String)]);
+  const allowed = new Set(ALLOWED_RETURN_ORIGINS.map(String));
   // Always allow redirecting back to the same host the request came in on.
   if (base) {
     try {
