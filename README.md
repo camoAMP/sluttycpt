@@ -104,6 +104,24 @@ Once that’s active, users just open your domain and sign in.
 - Locked videos show **thumbnails** and a **10s preview**; users must **unlock** to watch/download full.
 - Admin can see **online sessions/devices** and use the built-in **chat** to message users.
 
+## Buy Button (Optional)
+
+If you want a simple "Buy Access" button on the landing page (no built-in payments, just a link):
+
+```bash
+export BUY_URL="https://cptcommunityadults.fun/"   # or your checkout/contact page
+```
+
+Restart the server after changing env vars.
+
+## Encrypted Downloads (Offline Playback)
+
+- When a video is unlocked, the player shows **Download Encrypted**.
+- Encrypted downloads save a `.cptv` file that can only be played inside this app on the same device/browser profile.
+- Use the **Offline** button to open and play a `.cptv` file.
+
+Limitations: this discourages sharing but cannot prevent screen recording.
+
 ## Email Verification + Choose Username (Recommended)
 
 When SMTP is configured, sign-up requires **email verification**:
@@ -159,6 +177,23 @@ To share access with the token:
 1. Copy the generated token URL
 2. Distribute this URL to the intended recipients
 3. The recipients can use this link to access the designated content without needing individual accounts
+
+## Video Bundles (New Feature)
+
+The system now supports creating video bundles with predefined durations:
+
+- **10 Minutes Bundle**: A curated collection of videos totaling approximately 10 minutes
+- **15 Minutes Bundle**: A curated collection of videos totaling approximately 15 minutes
+- **30 Minutes Bundle**: A curated collection of videos totaling approximately 30 minutes
+- **45 Minutes Bundle**: A curated collection of videos totaling approximately 45 minutes
+- **1 Hour Bundle**: A curated collection of videos totaling approximately 1 hour
+
+### Creating Bundled Content Access Tokens
+
+1. When creating a token, select one of the predefined bundle types from the dropdown
+2. The system will automatically curate videos that fit within the duration constraints
+3. The token will provide access to only the videos in that bundle
+4. The bundle statistics (number of videos and total duration) are displayed in the admin panel
 
 ## Anti-Piracy Measures
 

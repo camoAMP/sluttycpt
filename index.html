@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Camfordick</title>
-    <!-- Optional: if hosting this UI separately (Worker/Pages), set this to your server base (HTTPS). -->
-    <meta name="camfordick:server" content="" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -92,100 +90,10 @@
     </style>
   </head>
 
-	  <body class="min-h-screen text-zinc-100 antialiased">
-		    <button
-		      id="cornerAdminBtn"
-		      class="neon-btn fixed right-4 top-4 z-50 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-display text-xs font-semibold tracking-wide text-white/90 backdrop-blur transition will-change-transform"
-		      type="button"
-		      title="Admin / Settings"
-		    >
-		      Admin
-	    </button>
-
-      <!-- Age gate (client-side). This is a disclaimer prompt, not a security boundary. -->
-      <div
-        id="ageGate"
-        class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="ageGateTitle"
-      >
-        <div class="w-full max-w-md rounded-2xl border border-white/10 bg-panel/80 p-6 glow-panel">
-          <div id="ageGateTitle" class="font-display text-xl font-bold tracking-tight text-white/95">18+ Only</div>
-          <div class="mt-2 text-sm text-zinc-300/90">
-            This private gallery contains adult material. By continuing you confirm you are at least 18 years old.
-          </div>
-          <div id="ageGateMsg" class="mt-3 font-mono text-xs text-rose-400"></div>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button
-              id="ageYesBtn"
-              type="button"
-              class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
-            >
-              Yes, I’m 18+
-            </button>
-            <button
-              id="ageNoBtn"
-              type="button"
-              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
-            >
-              No
-            </button>
-          </div>
-          <div class="mt-3 text-[11px] text-zinc-400/90">
-            This choice is remembered on this device.
-          </div>
-        </div>
-      </div>
-
-      <!-- Username setup (after email verification). -->
-      <div
-        id="usernameGate"
-        class="hidden fixed inset-0 z-[65] flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="usernameGateTitle"
-      >
-        <div class="w-full max-w-md rounded-2xl border border-white/10 bg-panel/80 p-6 glow-panel">
-          <div id="usernameGateTitle" class="font-display text-xl font-bold tracking-tight text-white/95">Choose a Username</div>
-          <div class="mt-2 text-sm text-zinc-300/90">
-            Pick a username for chat and admin controls.
-          </div>
-
-          <div class="mt-4">
-            <label for="usernameGateInput" class="block text-[11px] text-zinc-400">Username</label>
-            <input
-              id="usernameGateInput"
-              class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-              placeholder="yourname"
-              autocomplete="username"
-              inputmode="text"
-            />
-            <div class="mt-1 font-mono text-[11px] text-zinc-400">3-32 chars: letters, numbers, <span class="font-mono">._-</span></div>
-          </div>
-
-          <div id="usernameGateMsg" class="mt-3 font-mono text-xs text-rose-400"></div>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button
-              id="usernameGateSaveBtn"
-              type="button"
-              class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
-            >
-              Save
-            </button>
-            <button
-              id="usernameGateSignOutBtn"
-              type="button"
-              class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-		    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
-	      <header class="rounded-2xl border border-white/10 bg-panel/60 p-5 glow-panel">
-	        <div id="brandRow" class="hidden flex flex-wrap items-center justify-between gap-3">
+  <body class="min-h-screen text-zinc-100 antialiased">
+    <div class="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-8">
+      <header class="rounded-2xl border border-white/10 bg-panel/60 p-5 glow-panel">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div
               class="h-10 w-10 rounded-xl border border-white/10 bg-gradient-to-br from-neonP/30 via-neonX/15 to-neonT/25"
@@ -196,20 +104,22 @@
                   >Camfordick</span
                 >
               </h1>
-	              <p class="text-xs text-zinc-300/90">Private video gallery</p>
+              <p class="text-xs text-zinc-300/90">
+                Local folder (File System Access API + IndexedDB) or PC server feed (no uploads)
+              </p>
             </div>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-	            <span
-	              id="supportPill"
-	              class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
-	              >Checking browser support…</span
-	            >
+            <span
+              id="supportPill"
+              class="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs text-zinc-200/90"
+              >Checking browser support…</span
+            >
           </div>
         </div>
 
-		        <div id="folderControlsRow" class="mt-4 hidden flex flex-wrap items-center gap-2">
+	        <div class="mt-4 flex flex-wrap items-center gap-2">
 	          <button
 	            id="selectFolderBtn"
             class="neon-btn rounded-xl bg-gradient-to-r from-neonP/70 to-neonX/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
@@ -253,7 +163,7 @@
 	          </button>
 	        </div>
 
-		        <div id="serverConnectRow" class="mt-3 hidden flex flex-wrap items-end gap-2">
+	        <div class="mt-3 flex flex-wrap items-end gap-2">
 	          <div class="min-w-[260px] flex-1">
 	            <label for="serverUrlInput" class="block text-[11px] text-zinc-400">PC Server URL (HTTPS)</label>
 	            <input
@@ -304,28 +214,26 @@
 	        </div>
 
           <div id="authRow" class="mt-3 flex flex-wrap items-end gap-2">
-		            <div id="authUserWrap" class="min-w-[160px]">
-	              <label id="authUserLabel" for="authUserInput" class="block text-[11px] text-zinc-400">Email</label>
-	              <input
-	                id="authUserInput"
-	                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-	                placeholder="name@example.com"
-	                autocomplete="email"
-	                inputmode="email"
-	              />
-	            </div>
+            <div class="min-w-[160px]">
+              <label for="authUserInput" class="block text-[11px] text-zinc-400">Username</label>
+              <input
+                id="authUserInput"
+                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+                placeholder="yourname"
+                autocomplete="username"
+              />
+            </div>
 
-		            <div id="authPassWrap" class="min-w-[200px] flex-1">
-	              <label for="authPassInput" class="block text-[11px] text-zinc-400">Password</label>
-	              <input
-	                id="authPassInput"
-	                type="password"
-	                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-	                placeholder="••••••••"
-	                autocomplete="current-password"
-	              />
-                <div class="mt-1 font-mono text-[11px] text-zinc-400">Use a password 8+ characters.</div>
-	            </div>
+            <div class="min-w-[200px] flex-1">
+              <label for="authPassInput" class="block text-[11px] text-zinc-400">Password</label>
+              <input
+                id="authPassInput"
+                type="password"
+                class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+            </div>
 
             <button
               id="signInBtn"
@@ -354,36 +262,23 @@
               Sign Out
             </button>
 
-		            <div id="authMetaWrap" class="ml-auto hidden flex flex-wrap items-center gap-2 text-xs">
-                  <button
-                    id="chatBtn"
-                    class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 font-display text-[11px] font-semibold tracking-wide text-white/90 transition hover:bg-black/40"
-                    type="button"
-                    title="Chat with admin"
-                  >
-                    Chat
-                  </button>
-	              <span
-	                id="authPill"
-	                class="rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-zinc-200/90"
-	                >Signed out</span
-	              >
+            <div class="ml-auto flex flex-wrap items-center gap-2 text-xs">
+              <span
+                id="authPill"
+                class="rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-zinc-200/90"
+                >Signed out</span
+              >
               <span
                 id="creditsPill"
                 class="hidden rounded-full border border-white/10 bg-black/30 px-3 py-1 font-mono text-[11px] text-zinc-200/90"
                 >Unlocked: <span id="creditsText" class="text-zinc-100">0/0</span></span
               >
-	            </div>
-	          </div>
+            </div>
+          </div>
 
-	          <div class="mt-2">
-	            <div id="authErrorText" class="font-mono text-xs text-rose-400"></div>
-	            <div id="authStatusText" class="mt-1 font-mono text-[11px] text-zinc-400"></div>
-	          </div>
-
-	          <div
-	            id="adminPanel"
-	            class="mt-3 hidden rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-zinc-200/90"
+          <div
+            id="adminPanel"
+            class="mt-3 hidden rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-zinc-200/90"
           >
             <div class="mb-2 font-display text-sm font-semibold tracking-wide text-white/90">Admin: Set Quota</div>
             <div class="flex flex-wrap items-end gap-2">
@@ -454,6 +349,23 @@
                     class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
                   />
                 </div>
+                
+                <!-- Bundle Selection -->
+                <div class="w-[160px]">
+                  <label for="tokenBundleSelect" class="block text-[11px] text-zinc-400">Bundle Type (Optional)</label>
+                  <select
+                    id="tokenBundleSelect"
+                    class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
+                  >
+                    <option value="">Select a bundle...</option>
+                    <option value="10min">10 Minutes</option>
+                    <option value="15min">15 Minutes</option>
+                    <option value="30min">30 Minutes</option>
+                    <option value="45min">45 Minutes</option>
+                    <option value="1hour">1 Hour</option>
+                  </select>
+                </div>
+                
                 <button
                   id="createTokenBtn"
                   class="neon-btn rounded-xl bg-gradient-to-r from-violet-600/70 to-emerald-500/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
@@ -468,6 +380,13 @@
                 >
                   Refresh Tokens
                 </button>
+                <button
+                  id="refreshBundlesBtn"
+                  class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
+                  type="button"
+                >
+                  Refresh Bundles
+                </button>
               </div>
               
               <div class="mt-3">
@@ -477,81 +396,41 @@
                 </div>
               </div>
               
+              <!-- Bundle Stats Display -->
+              <div id="bundleStatsContainer" class="mt-3">
+                <div class="font-display text-sm font-semibold tracking-wide text-white/90 mb-2">Available Bundles</div>
+                <div id="bundleStats" class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  <div class="text-center p-2 bg-black/20 rounded border border-white/10">
+                    <div class="text-xs text-zinc-400">10 Min</div>
+                    <div id="bundle10min" class="text-sm">Loading...</div>
+                  </div>
+                  <div class="text-center p-2 bg-black/20 rounded border border-white/10">
+                    <div class="text-xs text-zinc-400">15 Min</div>
+                    <div id="bundle15min" class="text-sm">Loading...</div>
+                  </div>
+                  <div class="text-center p-2 bg-black/20 rounded border border-white/10">
+                    <div class="text-xs text-zinc-400">30 Min</div>
+                    <div id="bundle30min" class="text-sm">Loading...</div>
+                  </div>
+                  <div class="text-center p-2 bg-black/20 rounded border border-white/10">
+                    <div class="text-xs text-zinc-400">45 Min</div>
+                    <div id="bundle45min" class="text-sm">Loading...</div>
+                  </div>
+                  <div class="text-center p-2 bg-black/20 rounded border border-white/10">
+                    <div class="text-xs text-zinc-400">1 Hour</div>
+                    <div id="bundle1hour" class="text-sm">Loading...</div>
+                  </div>
+                </div>
+              </div>
+              
               <div id="tokenList" class="mt-4">
                 <div class="font-display text-sm font-semibold tracking-wide text-white/90 mb-2">Active Tokens</div>
                 <!-- Token list will be populated here -->
               </div>
             </div>
-
-            <div class="mt-5 border-t border-white/10 pt-4">
-              <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div class="font-display text-sm font-semibold tracking-wide text-white/90">Online / Devices</div>
-                <button
-                  id="adminRefreshSessionsBtn"
-                  class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
-                  type="button"
-                >
-                  Refresh Online
-                </button>
-              </div>
-              <div
-                id="adminSessionsList"
-                class="max-h-56 overflow-auto rounded-xl border border-white/10 bg-black/20 p-2 font-mono text-[11px] text-zinc-100/90"
-              ></div>
-              <div id="adminSessionsMsg" class="mt-2 font-mono text-[11px] text-zinc-400"></div>
-            </div>
-
-            <div class="mt-5 border-t border-white/10 pt-4">
-              <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div class="font-display text-sm font-semibold tracking-wide text-white/90">Chat</div>
-                <button
-                  id="adminChatRefreshBtn"
-                  class="neon-btn rounded-xl border border-white/10 bg-black/30 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white/90 transition will-change-transform"
-                  type="button"
-                >
-                  Refresh
-                </button>
-              </div>
-              <div class="flex flex-wrap items-end gap-2">
-                <div class="min-w-[220px] flex-1">
-                  <label for="adminChatThreadSelect" class="block text-[11px] text-zinc-400">Thread</label>
-                  <select
-                    id="adminChatThreadSelect"
-                    class="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 focus:border-white/20 focus:bg-black/40"
-                  ></select>
-                </div>
-                <button
-                  id="adminChatOpenBtn"
-                  class="neon-btn rounded-xl bg-gradient-to-r from-neonP/70 to-neonT/60 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
-                  type="button"
-                >
-                  Open
-                </button>
-              </div>
-              <div
-                id="adminChatMessages"
-                class="mt-3 max-h-64 overflow-auto rounded-xl border border-white/10 bg-black/20 p-2 font-mono text-[11px] text-zinc-100/90"
-              ></div>
-              <div class="mt-2 flex items-end gap-2">
-                <input
-                  id="adminChatInput"
-                  class="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-                  placeholder="Message selected user…"
-                  autocomplete="off"
-                />
-                <button
-                  id="adminChatSendBtn"
-                  class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
-                  type="button"
-                >
-                  Send
-                </button>
-              </div>
-              <div id="adminChatMsg" class="mt-2 font-mono text-[11px] text-zinc-400"></div>
-            </div>
           </div>
 
-		        <div id="statsRow" class="mt-4 hidden grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
+	        <div class="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-300/90 sm:grid-cols-2 lg:grid-cols-4">
 	          <div class="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
 	            <div class="text-zinc-400">Folder</div>
 	            <div id="folderName" class="mt-0.5 truncate font-mono text-zinc-100">None</div>
@@ -576,8 +455,8 @@
         </div>
       </header>
 
-	      <main id="mainContent" class="mt-7 hidden flex flex-col items-center gap-7">
-	        <section id="playerSection" class="hidden w-[92vw] max-w-[1200px] md:w-[70vw]">
+      <main class="mt-7 flex flex-col items-center gap-7">
+        <section class="w-[92vw] max-w-[1200px] md:w-[70vw]">
           <div class="rounded-2xl border border-white/10 bg-black/30 glow-panel">
             <div id="playerShell" class="relative overflow-hidden rounded-2xl">
               <div class="aspect-video bg-black">
@@ -646,13 +525,13 @@
 
         <section class="w-[92vw] max-w-[1200px] md:w-[70vw]">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-	            <h2 class="font-display text-lg font-semibold tracking-wide">Gallery</h2>
+            <h2 class="font-display text-lg font-semibold tracking-wide">Library</h2>
             <div class="text-xs text-zinc-400">
               Auto-rescan: <span id="autoRescanLabel" class="font-mono text-zinc-200">15s</span>
             </div>
           </div>
 
-	          <div id="grid" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+          <div id="grid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"></div>
 
           <div
             id="emptyState"
@@ -670,49 +549,13 @@
       </main>
     </div>
 
-	    <div
-	      id="toast"
-	      class="pointer-events-none fixed bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs text-zinc-200 shadow-[0_0_30px_rgba(168,85,247,0.25)] backdrop-blur"
-	    ></div>
+    <div
+      id="toast"
+      class="pointer-events-none fixed bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs text-zinc-200 shadow-[0_0_30px_rgba(168,85,247,0.25)] backdrop-blur"
+    ></div>
 
-      <div
-        id="chatPanel"
-        class="hidden fixed bottom-20 right-6 z-40 w-[92vw] max-w-[380px] rounded-2xl border border-white/10 bg-black/60 p-4 text-zinc-200 shadow-[0_0_40px_rgba(168,85,247,0.18)] backdrop-blur"
-      >
-        <div class="flex items-center justify-between gap-2">
-          <div class="font-display text-sm font-semibold tracking-wide text-white/90">Chat with Admin</div>
-          <button
-            id="chatCloseBtn"
-            class="rounded-full border border-white/10 bg-black/30 px-3 py-1 font-display text-[11px] font-semibold tracking-wide text-white/90 transition hover:bg-black/40"
-            type="button"
-          >
-            Close
-          </button>
-        </div>
-        <div
-          id="chatMessages"
-          class="mt-3 max-h-[320px] overflow-auto rounded-xl border border-white/10 bg-black/20 p-2 font-mono text-[11px] text-zinc-100/90"
-        ></div>
-        <div class="mt-3 flex items-end gap-2">
-          <input
-            id="chatInput"
-            class="flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-xs text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-white/20 focus:bg-black/40"
-            placeholder="Type a message…"
-            autocomplete="off"
-          />
-          <button
-            id="chatSendBtn"
-            class="neon-btn rounded-xl bg-gradient-to-r from-neonT/55 to-neonP/55 px-4 py-2 font-display text-sm font-semibold tracking-wide text-white transition will-change-transform"
-            type="button"
-          >
-            Send
-          </button>
-        </div>
-        <div id="chatHint" class="mt-2 font-mono text-[11px] text-zinc-400"></div>
-      </div>
-
-	    <script>
-	      "use strict";
+    <script>
+      "use strict";
 
       const VIDEO_EXTS = new Set(["mp4", "webm", "mkv", "avi", "mov", "m4v"]);
       const THUMB_PREVIEW_EXTS = new Set(["mp4", "webm", "mov", "m4v"]);
@@ -723,72 +566,32 @@
        * @typedef {LocalVideoEntry | ServerVideoEntry} VideoEntry
        */
 
-		      const state = {
-		        mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
-		        view: /** @type {"landing" | "gallery"} */ ("landing"),
-		        adminRoute: false,
-		        ageOk: false,
-            needsUsernameSetup: false,
-            postVerifySetup: false,
-		        cornerOpen: false,
-		        serverInfo: null, // from /api/info
-		        serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
-		        serverToken: "",
-		        contentToken: "",
-	        authToken: "",
-	        me: null, // from /api/me or /api/videos summary
-	        dirHandle: null,
-	        videos: /** @type {VideoEntry[]} */ ([]),
-	        byPath: /** @type {Map<string, VideoEntry>} */ (new Map()),
-	        urlCache: new Map(), // local: path -> objectURL
-	        streamOn: true,
-	        currentPath: null,
-	        currentIsPreview: false,
-	        scanInProgress: false,
-	        scanSeq: 0,
-	        autoRescanMs: 15_000,
-	        toastTimer: null,
-	        thumbObserver: null,
-            naughtyTitleByPath: new Map(), // server + non-admin: relPath -> "Naughty Stuff ###"
-            durationByPath: new Map(), // server: relPath -> durationSec
-            durationQueue: [],
-            durationQueued: new Set(),
-            durationInFlight: 0,
-	        pingTimer: null,
-	          pingInFlight: false,
-		        adminUsers: [],
-	        contentTokens: [],
-	        allVideos: [],
-          chatOpen: false,
-          chatSince: 0,
-          chatTimer: null,
-          adminChatUid: "",
-          adminChatSince: 0,
-          adminChatTimer: null,
-	      };
+      const state = {
+        mode: /** @type {"local" | "server" | "auto"} */ ("auto"),
+        serverInfo: null, // from /api/info
+        serverBase: "", // e.g. https://xxxx.trycloudflare.com (empty => same origin)
+        serverToken: "",
+        authToken: "",
+        me: null, // from /api/me or /api/videos summary
+        dirHandle: null,
+        videos: /** @type {VideoEntry[]} */ ([]),
+        byPath: /** @type {Map<string, VideoEntry>} */ (new Map()),
+        urlCache: new Map(), // local: path -> objectURL
+        streamOn: true,
+        currentPath: null,
+        currentIsPreview: false,
+        scanInProgress: false,
+        scanSeq: 0,
+        autoRescanMs: 15_000,
+        toastTimer: null,
+        thumbObserver: null,
+        adminUsers: [],
+        contentTokens: [],
+        allVideos: [],
+        bundleStats: {}
+      };
 
-	      const el = {
-	        cornerAdminBtn: document.getElementById("cornerAdminBtn"),
-	        ageGate: document.getElementById("ageGate"),
-	        ageGateMsg: document.getElementById("ageGateMsg"),
-	        ageYesBtn: document.getElementById("ageYesBtn"),
-	        ageNoBtn: document.getElementById("ageNoBtn"),
-          usernameGate: document.getElementById("usernameGate"),
-          usernameGateInput: document.getElementById("usernameGateInput"),
-          usernameGateSaveBtn: document.getElementById("usernameGateSaveBtn"),
-          usernameGateSignOutBtn: document.getElementById("usernameGateSignOutBtn"),
-          usernameGateMsg: document.getElementById("usernameGateMsg"),
-	        brandRow: document.getElementById("brandRow"),
-	        folderControlsRow: document.getElementById("folderControlsRow"),
-	        serverConnectRow: document.getElementById("serverConnectRow"),
-	        statsRow: document.getElementById("statsRow"),
-        mainContent: document.getElementById("mainContent"),
-        playerSection: document.getElementById("playerSection"),
-	        authUserWrap: document.getElementById("authUserWrap"),
-	        authPassWrap: document.getElementById("authPassWrap"),
-	        authMetaWrap: document.getElementById("authMetaWrap"),
-	        authErrorText: document.getElementById("authErrorText"),
-	        authStatusText: document.getElementById("authStatusText"),
+      const el = {
         supportPill: document.getElementById("supportPill"),
         selectFolderBtn: document.getElementById("selectFolderBtn"),
         refreshBtn: document.getElementById("refreshBtn"),
@@ -797,42 +600,38 @@
         fsBtn: document.getElementById("fsBtn"),
         serverUrlInput: document.getElementById("serverUrlInput"),
         serverTokenInput: document.getElementById("serverTokenInput"),
-	        connectServerBtn: document.getElementById("connectServerBtn"),
-	        copyLinkBtn: document.getElementById("copyLinkBtn"),
-	        disconnectServerBtn: document.getElementById("disconnectServerBtn"),
-          authUserLabel: document.getElementById("authUserLabel"),
-	        authUserInput: document.getElementById("authUserInput"),
-	        authPassInput: document.getElementById("authPassInput"),
-	        signInBtn: document.getElementById("signInBtn"),
-	        signUpBtn: document.getElementById("signUpBtn"),
-	        signOutBtn: document.getElementById("signOutBtn"),
-          chatBtn: document.getElementById("chatBtn"),
-	        authPill: document.getElementById("authPill"),
-	        creditsPill: document.getElementById("creditsPill"),
-	        creditsText: document.getElementById("creditsText"),
-	        adminPanel: document.getElementById("adminPanel"),
-	        contentTokensPanel: document.getElementById("contentTokensPanel"),
-	        adminUserSelect: document.getElementById("adminUserSelect"),
-	        adminQuotaInput: document.getElementById("adminQuotaInput"),
-	        adminSetQuotaBtn: document.getElementById("adminSetQuotaBtn"),
-	        adminRefreshUsersBtn: document.getElementById("adminRefreshUsersBtn"),
-	        adminMsg: document.getElementById("adminMsg"),
-          adminRefreshSessionsBtn: document.getElementById("adminRefreshSessionsBtn"),
-          adminSessionsList: document.getElementById("adminSessionsList"),
-          adminSessionsMsg: document.getElementById("adminSessionsMsg"),
-          adminChatRefreshBtn: document.getElementById("adminChatRefreshBtn"),
-          adminChatThreadSelect: document.getElementById("adminChatThreadSelect"),
-          adminChatOpenBtn: document.getElementById("adminChatOpenBtn"),
-          adminChatMessages: document.getElementById("adminChatMessages"),
-          adminChatInput: document.getElementById("adminChatInput"),
-          adminChatSendBtn: document.getElementById("adminChatSendBtn"),
-          adminChatMsg: document.getElementById("adminChatMsg"),
-	        tokenNameInput: document.getElementById("tokenNameInput"),
-	        tokenMaxUsesInput: document.getElementById("tokenMaxUsesInput"),
-	        tokenValidUntilInput: document.getElementById("tokenValidUntilInput"),
-	        createTokenBtn: document.getElementById("createTokenBtn"),
+        connectServerBtn: document.getElementById("connectServerBtn"),
+        copyLinkBtn: document.getElementById("copyLinkBtn"),
+        disconnectServerBtn: document.getElementById("disconnectServerBtn"),
+        authUserInput: document.getElementById("authUserInput"),
+        authPassInput: document.getElementById("authPassInput"),
+        signInBtn: document.getElementById("signInBtn"),
+        signUpBtn: document.getElementById("signUpBtn"),
+        signOutBtn: document.getElementById("signOutBtn"),
+        authPill: document.getElementById("authPill"),
+        creditsPill: document.getElementById("creditsPill"),
+        creditsText: document.getElementById("creditsText"),
+        adminPanel: document.getElementById("adminPanel"),
+        contentTokensPanel: document.getElementById("contentTokensPanel"),
+        adminUserSelect: document.getElementById("adminUserSelect"),
+        adminQuotaInput: document.getElementById("adminQuotaInput"),
+        adminSetQuotaBtn: document.getElementById("adminSetQuotaBtn"),
+        adminRefreshUsersBtn: document.getElementById("adminRefreshUsersBtn"),
+        adminMsg: document.getElementById("adminMsg"),
+        tokenNameInput: document.getElementById("tokenNameInput"),
+        tokenMaxUsesInput: document.getElementById("tokenMaxUsesInput"),
+        tokenValidUntilInput: document.getElementById("tokenValidUntilInput"),
+        tokenBundleSelect: document.getElementById("tokenBundleSelect"),
+        createTokenBtn: document.getElementById("createTokenBtn"),
         refreshTokensBtn: document.getElementById("refreshTokensBtn"),
+        refreshBundlesBtn: document.getElementById("refreshBundlesBtn"),
         videoSelectionContainer: document.getElementById("videoSelectionContainer"),
+        bundleStatsContainer: document.getElementById("bundleStatsContainer"),
+        bundle10min: document.getElementById("bundle10min"),
+        bundle15min: document.getElementById("bundle15min"),
+        bundle30min: document.getElementById("bundle30min"),
+        bundle45min: document.getElementById("bundle45min"),
+        bundle1hour: document.getElementById("bundle1hour"),
         tokenList: document.getElementById("tokenList"),
         folderName: document.getElementById("folderName"),
         statusText: document.getElementById("statusText"),
@@ -848,17 +647,11 @@
         nowPlaying: document.getElementById("nowPlaying"),
         errorText: document.getElementById("errorText"),
         grid: document.getElementById("grid"),
-	        emptyState: document.getElementById("emptyState"),
-	        emptyHint: document.getElementById("emptyHint"),
-	        toast: document.getElementById("toast"),
-	        autoRescanLabel: document.getElementById("autoRescanLabel"),
-          chatPanel: document.getElementById("chatPanel"),
-          chatCloseBtn: document.getElementById("chatCloseBtn"),
-          chatMessages: document.getElementById("chatMessages"),
-          chatInput: document.getElementById("chatInput"),
-          chatSendBtn: document.getElementById("chatSendBtn"),
-          chatHint: document.getElementById("chatHint"),
-	      };
+        emptyState: document.getElementById("emptyState"),
+        emptyHint: document.getElementById("emptyHint"),
+        toast: document.getElementById("toast"),
+        autoRescanLabel: document.getElementById("autoRescanLabel"),
+      };
 
       const idb = (() => {
         const DB_NAME = "camfordick-db";
@@ -925,21 +718,11 @@
       }
 
       function setStatus(msg) {
-        const s = msg || "";
-        el.statusText.textContent = s;
-        el.authStatusText.textContent = s;
+        el.statusText.textContent = msg || "";
       }
 
       function setError(msg) {
-        const s = msg || "";
-        if (state.view === "landing") {
-          el.authErrorText.textContent = s;
-          el.errorText.textContent = "";
-          return;
-        }
-
-        el.authErrorText.textContent = "";
-        el.errorText.textContent = s;
+        el.errorText.textContent = msg || "";
       }
 
       function setFolderName(msg) {
@@ -954,317 +737,57 @@
         el.streamOffOverlay.classList.toggle("hidden", state.streamOn);
       }
 
-	      function setAdminMsg(msg) {
-	        el.adminMsg.textContent = msg || "";
-	      }
-
-        function setAdminSessionsMsg(msg) {
-          if (!el.adminSessionsMsg) return;
-          el.adminSessionsMsg.textContent = msg || "";
-        }
-
-        function setAdminChatMsg(msg) {
-          if (!el.adminChatMsg) return;
-          el.adminChatMsg.textContent = msg || "";
-        }
-
-        function looksLikeEmail(raw) {
-          const s = String(raw || "").trim();
-          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-        }
-
-        function getOrCreateDeviceId() {
-          const KEY = "camfordick_device_id";
-          try {
-            const cur = localStorage.getItem(KEY) || "";
-            if (cur) return cur;
-            const fresh = crypto.randomUUID();
-            localStorage.setItem(KEY, fresh);
-            return fresh;
-          } catch {
-            return crypto.randomUUID();
-          }
-        }
-
-        function getDeviceName() {
-          try {
-            const parts = [];
-            const platform = String(navigator.platform || "").trim();
-            const ua = String(navigator.userAgent || "").trim();
-            if (platform) parts.push(platform);
-            if (ua) parts.push(ua);
-            const s = parts.join(" ").trim();
-            if (!s) return "browser";
-            return s.length > 120 ? s.slice(0, 120) : s;
-          } catch {
-            return "browser";
-          }
-        }
-
-        function stopHeartbeat() {
-          if (state.pingTimer) {
-            clearInterval(state.pingTimer);
-            state.pingTimer = null;
-          }
-          state.pingInFlight = false;
-        }
-
-        async function sendPingOnce() {
-          if (state.pingInFlight) return;
-          if (state.mode !== "server") return;
-          if (!state.authToken) return;
-          if (!state.me) return;
-
-          state.pingInFlight = true;
-          try {
-            const j = await apiJson("/api/ping", {
-              method: "POST",
-              body: { deviceId: getOrCreateDeviceId(), deviceName: getDeviceName() },
-            });
-            if (j.auth) persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth);
-          } catch (err) {
-            const msg = (err && err.message) || String(err);
-            if (msg === "account_disabled") {
-              setError("Account disabled.");
-              signOut();
-            } else if (msg === "access_expired") {
-              setError("Access expired.");
-              signOut();
-            }
-          } finally {
-            state.pingInFlight = false;
-          }
-        }
-
-        function startHeartbeat() {
-          stopHeartbeat();
-          if (state.mode !== "server") return;
-          if (!state.authToken) return;
-          if (!state.me) return;
-          sendPingOnce().catch(() => {});
-          state.pingTimer = setInterval(() => {
-            sendPingOnce().catch(() => {});
-          }, 25_000);
-        }
-
-	      const AGE_OK_KEY = "camfordick_age_ok";
-
-      function readAgeOk() {
-        try {
-          return localStorage.getItem(AGE_OK_KEY) === "1";
-        } catch {
-          return false;
-        }
+      function setAdminMsg(msg) {
+        el.adminMsg.textContent = msg || "";
       }
 
-      function writeAgeOk(ok) {
-        try {
-          if (ok) localStorage.setItem(AGE_OK_KEY, "1");
-          else localStorage.removeItem(AGE_OK_KEY);
-        } catch {
-          // Ignore.
-        }
-      }
+      function setAuthUi() {
+        const usingServer = state.mode === "server";
+        const me = state.me;
 
-      function setAgeGateUi() {
-        el.ageGate.classList.toggle("hidden", !!state.ageOk);
-      }
-
-      function ensureAgeOk() {
-        if (state.ageOk) return true;
-        setAgeGateUi();
-        toast("18+ confirmation required.");
-        return false;
-      }
-
-      function setUsernameGateMsg(msg) {
-        if (!el.usernameGateMsg) return;
-        el.usernameGateMsg.textContent = msg || "";
-      }
-
-      function setUsernameGateUi() {
-        if (!el.usernameGate) return;
-        const show = !!state.needsUsernameSetup;
-        el.usernameGate.classList.toggle("hidden", !show);
-        if (!show) return;
-        try {
-          el.usernameGateInput.focus();
-        } catch {
-          // Ignore.
-        }
-      }
-
-      function openUsernameGate(msg) {
-        state.needsUsernameSetup = true;
-        setUsernameGateMsg(msg || "");
-        setUsernameGateUi();
-      }
-
-      function closeUsernameGate() {
-        state.needsUsernameSetup = false;
-        setUsernameGateMsg("");
-        setUsernameGateUi();
-      }
-
-      async function saveUsernameFromGate() {
-        setUsernameGateMsg("");
-        const username = String((el.usernameGateInput && el.usernameGateInput.value) || "").trim();
-        if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
-          setUsernameGateMsg("Use 3-32 chars: letters, numbers, . _ -");
+        if (!usingServer) {
+          el.authPill.textContent = "Local mode";
+          el.signInBtn.classList.remove("hidden");
+          el.signUpBtn.classList.remove("hidden");
+          el.signOutBtn.classList.add("hidden");
+          el.creditsPill.classList.add("hidden");
+          el.adminPanel.classList.add("hidden");
+          el.contentTokensPanel.classList.add("hidden");
+          setAdminMsg("");
           return;
         }
-        try {
-          setUsernameGateMsg("Saving…");
-          const j = await apiJson("/api/me/username", { method: "POST", body: { username } });
-          if (j && j.user && state.me) {
-            state.me.username = String(j.user.username || username);
-            state.me.needsUsername = !!j.user.needsUsername;
-          }
-          closeUsernameGate();
-          setStatus("Username saved");
-          setAuthUi();
-          renderLibrary();
-        } catch (err) {
-          console.error(err);
-          const msg = (err && err.message) || String(err);
-          setUsernameGateMsg(msg === "username_taken" ? "Username already taken." : msg === "bad_username" ? "Invalid username." : msg);
+
+        if (!me) {
+          el.authPill.textContent = "Signed out";
+          el.signInBtn.classList.remove("hidden");
+          el.signUpBtn.classList.remove("hidden");
+          el.signOutBtn.classList.add("hidden");
+          el.creditsPill.classList.add("hidden");
+          el.adminPanel.classList.add("hidden");
+          el.contentTokensPanel.classList.add("hidden");
+          setAdminMsg("");
+          return;
         }
-      }
 
-      function hasGalleryAccess() {
-        if (!state.ageOk) return false;
-        if (state.mode === "server") return !!(state.me || state.serverToken || state.contentToken);
-        if (state.mode === "local") return !!state.dirHandle;
-        return false;
-      }
+        const role = String(me.role || "user");
+        const who = me.username ? me.username : role === "admin" ? "admin" : "user";
+        el.authPill.textContent = role === "admin" ? `Signed in: ${who} (admin)` : `Signed in: ${who}`;
+        el.signInBtn.classList.add("hidden");
+        el.signUpBtn.classList.add("hidden");
+        el.signOutBtn.classList.remove("hidden");
 
-      function setCornerUi() {
-        const show = !!state.cornerOpen;
-        const role = state.me ? String(state.me.role || "") : "";
+        el.creditsPill.classList.remove("hidden");
+        if (role === "admin" || me.quota === -1) {
+          el.creditsText.textContent = "unlimited";
+        } else {
+          const q = typeof me.quota === "number" ? me.quota : 0;
+          const u = typeof me.unlockedCount === "number" ? me.unlockedCount : 0;
+          el.creditsText.textContent = `${u}/${q}`;
+        }
+
         const isAdmin = role === "admin";
-
-        // Keep advanced controls hidden from normal users.
-        el.folderControlsRow.classList.add("hidden");
-        el.serverConnectRow.classList.add("hidden");
-        el.statsRow.classList.add("hidden");
-
-        el.adminPanel.classList.toggle("hidden", !(show && isAdmin));
-        el.contentTokensPanel.classList.toggle("hidden", !(show && isAdmin));
-      }
-
-      function setViewUi() {
-        const canView = hasGalleryAccess();
-        state.view = canView ? "gallery" : "landing";
-        const landing = state.view === "landing";
-
-        setAgeGateUi();
-
-        el.mainContent.classList.toggle("hidden", landing);
-        el.brandRow.classList.toggle("hidden", landing);
-        el.authMetaWrap.classList.toggle("hidden", landing);
-
-        // Keep landing as "Sign In / Sign Up" only. Auth status + gallery are shown after access is granted.
-        el.authUserWrap.classList.toggle("hidden", !landing);
-        el.authPassWrap.classList.toggle("hidden", !landing);
-
-        // Show player only after a selection.
-        el.playerSection.classList.toggle("hidden", landing || !state.currentPath);
-
-        setCornerUi();
-      }
-
-	      function setAuthUi() {
-	        const usingServer = state.mode === "server";
-	        const me = state.me;
-	        const role = me ? String(me.role || "") : "";
-	        const isAdmin = role === "admin";
-	        const adminRoute = !!state.adminRoute;
-
-          // Email-first UX for users; username for admin login.
-          if (el.authUserLabel && el.authUserInput) {
-            if (adminRoute) {
-              el.authUserLabel.textContent = "Username";
-              el.authUserInput.placeholder = "Camoflage";
-              el.authUserInput.autocomplete = "username";
-              el.authUserInput.inputMode = "text";
-            } else {
-              el.authUserLabel.textContent = "Email";
-              el.authUserInput.placeholder = "name@example.com";
-              el.authUserInput.autocomplete = "email";
-              el.authUserInput.inputMode = "email";
-            }
-          }
-
-        // Always show the corner button so admins can find it on the landing page.
-        // If the current user isn't admin, clicking it will show a hint instead of opening panels.
-        el.cornerAdminBtn.classList.remove("hidden");
-        el.cornerAdminBtn.classList.toggle("opacity-60", !isAdmin);
-        el.cornerAdminBtn.title = isAdmin ? "Admin / Settings" : "Admin (sign in as admin to unlock)";
-        if (!isAdmin) state.cornerOpen = false;
-        const signupEnabled =
-          !usingServer ||
-          !state.serverInfo ||
-          !state.serverInfo.auth ||
-          state.serverInfo.auth.signupEnabled !== false;
-
-	        if (!usingServer) {
-	          el.authPill.textContent = state.mode === "local" ? "Local mode" : "Not connected";
-	          el.signInBtn.textContent = adminRoute ? "Admin Login" : "Sign In";
-	          el.signInBtn.classList.remove("hidden");
-	          el.signUpBtn.classList.toggle("hidden", !signupEnabled || adminRoute);
-	          el.signOutBtn.classList.add("hidden");
-            if (el.chatBtn) el.chatBtn.classList.add("hidden");
-	          el.creditsPill.classList.add("hidden");
-	          el.adminPanel.classList.add("hidden");
-	          el.contentTokensPanel.classList.add("hidden");
-	          setAdminMsg("");
-	          setViewUi();
-	          return;
-	        }
-
-	        if (!me) {
-	          el.authPill.textContent = "Signed out";
-	          el.signInBtn.textContent = adminRoute ? "Admin Login" : "Sign In";
-	          el.signInBtn.classList.remove("hidden");
-	          el.signUpBtn.classList.toggle("hidden", !signupEnabled || adminRoute);
-	          el.signOutBtn.classList.add("hidden");
-            if (el.chatBtn) el.chatBtn.classList.add("hidden");
-	          el.creditsPill.classList.add("hidden");
-	          el.adminPanel.classList.add("hidden");
-	          el.contentTokensPanel.classList.add("hidden");
-	          setAdminMsg("");
-	          setViewUi();
-	          return;
-	        }
-
-		        const roleLabel = role || "user";
-		        const who =
-              roleLabel === "admin"
-                ? me.username || me.email || "admin"
-                : roleLabel === "token-user"
-                  ? ""
-                  : me.email || me.username || "user";
-		        el.authPill.textContent =
-		          roleLabel === "admin" ? `Signed in: ${who} (admin)` : roleLabel === "token-user" ? "Access: Token" : `Signed in: ${who}`;
-		        el.signInBtn.classList.add("hidden");
-		        el.signUpBtn.classList.add("hidden");
-		        el.signOutBtn.classList.remove("hidden");
-            if (el.chatBtn) el.chatBtn.classList.toggle("hidden", !(roleLabel === "user"));
-
-		        el.creditsPill.classList.remove("hidden");
-	        if (roleLabel === "admin" || me.quota === -1) {
-	          el.creditsText.textContent = "unlimited";
-	        } else {
-	          const q = typeof me.quota === "number" ? me.quota : 0;
-	          const u = typeof me.unlockedCount === "number" ? me.unlockedCount : 0;
-	          el.creditsText.textContent = `${u}/${q}`;
-	        }
-
-	        // Admin features are behind the "Admin" corner button.
-	        el.adminPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
-	        el.contentTokensPanel.classList.toggle("hidden", !(isAdmin && state.cornerOpen));
-
-        setViewUi();
+        el.adminPanel.classList.toggle("hidden", !isAdmin);
+        el.contentTokensPanel.classList.toggle("hidden", !isAdmin);
       }
 
       function setPlayerActions(entry) {
@@ -1281,9 +804,7 @@
         if (!hasEntry) return;
         if (entry.source !== "server") return;
 
-        const role = state.me ? String(state.me.role || "") : "";
-        const isAdmin = role === "admin";
-        const isTokenUser = role === "token-user";
+        const isAdmin = state.me && String(state.me.role) === "admin";
         const unlocked = !!entry.unlocked || isAdmin;
         const previewSeconds =
           state.serverInfo && state.serverInfo.auth && typeof state.serverInfo.auth.previewSeconds === "number"
@@ -1291,8 +812,7 @@
             : 10;
 
         if (unlocked) {
-          el.playerHint.textContent =
-            isAdmin ? "Admin access: full watch/download." : isTokenUser ? "Token access: full watch/download." : "Unlocked: full watch/download.";
+          el.playerHint.textContent = isAdmin ? "Admin access: full watch/download." : "Unlocked: full watch/download.";
           el.playerDownloadBtn.classList.remove("hidden");
           el.playerDownloadBtn.href = serverDownloadUrl(entry.path);
           return;
@@ -1303,10 +823,6 @@
 
         if (!state.me) {
           el.playerHint.textContent = `Preview only (${previewSeconds}s). Sign in to unlock.`;
-          return;
-        }
-        if (isTokenUser) {
-          el.playerHint.textContent = `Preview only (${previewSeconds}s). Token limit reached.`;
           return;
         }
 
@@ -1330,7 +846,6 @@
 
         state.videos = [];
         state.byPath = new Map();
-        state.naughtyTitleByPath = new Map();
         state.currentPath = null;
         state.currentIsPreview = false;
         el.videoCount.textContent = "0";
@@ -1489,7 +1004,7 @@
         el.disconnectServerBtn.classList.toggle("opacity-50", !isServer);
       }
 
-      async function connectServer(baseRaw, tokenRaw, { remember = true, info = null } = {}) {
+      async function connectServer(baseRaw, tokenRaw, { remember = true } = {}) {
         setError("");
 
         const base = normalizeServerBase(baseRaw);
@@ -1503,8 +1018,8 @@
         el.serverTokenInput.value = token;
         setStatus("Connecting to server…");
 
-        const detected = info || (await detectServerInfoAt(base));
-        if (!detected) {
+        const info = await detectServerInfoAt(base);
+        if (!info) {
           setStatus("Server not reachable");
           setError("Could not reach /api/info on that server URL.");
           return false;
@@ -1512,7 +1027,7 @@
 
         resetLibraryState();
         state.mode = "server";
-        state.serverInfo = detected;
+        state.serverInfo = info;
         state.serverBase = base;
         state.serverToken = token;
         state.me = null;
@@ -1542,7 +1057,7 @@
 
         renderLibrary();
         const authed = await refreshMe();
-        if (authed || state.serverToken || state.contentToken) {
+        if (authed || state.serverToken) {
           await refreshLibrary({ reason: "startup", toastOnChange: false });
         } else {
           setStatus("Sign in required");
@@ -1552,20 +1067,16 @@
         return true;
       }
 
-	      async function disconnectServer() {
-	        state.mode = "auto";
-	        state.serverInfo = null;
-	        state.serverBase = "";
-	        state.serverToken = "";
-	        state.contentToken = "";
-	        state.authToken = "";
-	        state.me = null;
-          stopHeartbeat();
-          closeChat();
-	        el.serverTokenInput.value = "";
-	        setSupportPill();
-	        setServerFormUi();
-	        setAuthUi();
+      async function disconnectServer() {
+        state.mode = "auto";
+        state.serverInfo = null;
+        state.serverBase = "";
+        state.serverToken = "";
+        state.authToken = "";
+        state.me = null;
+        setSupportPill();
+        setServerFormUi();
+        setAuthUi();
         setFolderName("None");
         setStatus("Idle");
         setError("");
@@ -1586,13 +1097,8 @@
         }
 
         const u = new URL(window.location.href);
-        // If the UI is served by the same origin as the server, don't generate a confusing ?server=... link.
-        // This also avoids accidentally sending credentials to a different server if someone edits the URL.
-        const originBase = normalizeServerBase(window.location.origin);
-        if (originBase && base === originBase) u.searchParams.delete("server");
-        else u.searchParams.set("server", base);
+        u.searchParams.set("server", base);
         u.searchParams.delete("token");
-        u.searchParams.delete("contentToken");
         u.searchParams.delete("auth");
 
         try {
@@ -1606,215 +1112,82 @@
 
       async function ensureConnectedServer() {
         if (state.mode === "server") return true;
-
-        // Best-effort legacy token (optional).
-        let legacyToken = "";
-        try {
-          legacyToken = localStorage.getItem("camfordick_server_token") || "";
-        } catch {
-          // Ignore.
+        const base = normalizeServerBase(el.serverUrlInput.value);
+        if (!base) {
+          toast("Enter a PC Server URL first.");
+          return false;
         }
-
-        // Always prefer same-origin server if it exists. This prevents leaking credentials to a ?server=...
-        // parameter and avoids "wrong server" login confusion when old share links are used.
-        const originBase = normalizeServerBase(window.location.origin);
-        if (originBase) {
-          const originInfo = await detectServerInfoAt(originBase);
-          if (originInfo) return connectServer(originBase, legacyToken, { remember: false, info: originInfo });
-        }
-
-        /** @type {string[]} */
-        const candidates = [];
-        try {
-          const u = new URL(window.location.href);
-          const sp = u.searchParams.get("server");
-          if (sp) candidates.push(sp);
-        } catch {
-          // Ignore.
-        }
-
-        // Optional operator-configured default server base.
-        try {
-          const meta = document.querySelector('meta[name="camfordick:server"]');
-          const v = meta && meta.getAttribute("content") ? String(meta.getAttribute("content") || "").trim() : "";
-          if (v) candidates.push(v);
-        } catch {
-          // Ignore.
-        }
-
-        // Fallback to last-used server if present.
-        try {
-          const base = localStorage.getItem("camfordick_server_base") || "";
-          if (base) candidates.push(base);
-        } catch {
-          // Ignore.
-        }
-
-        const seen = new Set();
-        for (const raw of candidates) {
-          const base = normalizeServerBase(raw);
-          if (!base || seen.has(base)) continue;
-          seen.add(base);
-          const info = await detectServerInfoAt(base);
-          if (info) return connectServer(base, legacyToken, { remember: false, info });
-        }
-
-        setStatus("Server offline");
-        setError("Server is offline.");
-        toast("Server is offline.");
-        return false;
+        return connectServer(base, el.serverTokenInput.value, { remember: true });
       }
 
-		      async function signIn() {
-		        setError("");
-		        if (!ensureAgeOk()) return;
-		        const ok = await ensureConnectedServer();
-		        if (!ok) return;
+      async function signIn() {
+        setError("");
+        const ok = await ensureConnectedServer();
+        if (!ok) return;
 
-		        const identifier = String(el.authUserInput.value || "").trim();
-		        const password = String(el.authPassInput.value || "");
-		        if (!identifier || !password) {
-		          setError(state.adminRoute ? "Enter username + password." : "Enter email + password.");
-		          return;
-		        }
-            if (password.length < 8) {
-              setError("Password must be at least 8 characters.");
-              return;
-            }
-
-		        setStatus("Signing in…");
-		        try {
-	            const deviceId = getOrCreateDeviceId();
-	            const deviceName = getDeviceName();
-		          const j = await apiJson("/api/auth/login", { method: "POST", body: { identifier, password, deviceId, deviceName } });
-	          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
-	          el.authPassInput.value = "";
-	          try {
-	            localStorage.setItem("camfordick_last_username", identifier);
-	          } catch {
-	            // Ignore.
-	          }
-	          await refreshMe();
-	          renderLibrary();
-	          await refreshLibrary({ reason: "startup", toastOnChange: false });
-	          setStatus("Signed in");
-			        } catch (err) {
-			          console.error(err);
-			          setStatus("Sign in failed");
-			          const msg = (err && err.message) || String(err);
-			          setError(
-	                msg === "invalid_credentials"
-	                  ? "Invalid email/username or password."
-	                  : msg === "email_not_verified"
-	                    ? "Check your email and click the verification link before signing in."
-	                  : msg === "bad_request"
-	                    ? "Check your email/username and use a password with 8+ characters."
-	                    : msg === "account_disabled"
-	                      ? "Account disabled."
-                      : msg === "access_expired"
-                        ? "Access expired."
-                        : msg
-              );
-		        }
-		      }
-
-			      async function signUp() {
-			        setError("");
-			        if (!ensureAgeOk()) return;
-			        const ok = await ensureConnectedServer();
-			        if (!ok) return;
-
-			        const email = String(el.authUserInput.value || "").trim();
-			        const password = String(el.authPassInput.value || "");
-			        if (!email || !password) {
-			          setError("Enter email + password.");
-			          return;
-			        }
-	            if (password.length < 8) {
-	              setError("Password must be at least 8 characters.");
-	              return;
-	            }
-
-				        setStatus("Creating account…");
-			        try {
-		            const deviceId = getOrCreateDeviceId();
-		            const deviceName = getDeviceName();
-                let returnTo = "";
-                try {
-                  const u = new URL(window.location.href);
-                  u.hash = "";
-                  returnTo = u.toString();
-                } catch {
-                  returnTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-                }
-			          const j = await apiJson("/api/auth/signup", { method: "POST", body: { email, password, deviceId, deviceName, return_to: returnTo } });
-                // Email verification: no auth token until the user clicks the email link.
-                if (j && j.pending) {
-                  el.authPassInput.value = "";
-                  try {
-                    localStorage.setItem("camfordick_last_username", email);
-                  } catch {
-                    // Ignore.
-                  }
-                  setStatus("Check your email to verify.");
-                  toast("Verification email sent.");
-                  return;
-                }
-		            persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
-		            el.authPassInput.value = "";
-		          try {
-		            localStorage.setItem("camfordick_last_username", email);
-		          } catch {
-		            // Ignore.
-		          }
-	          await refreshMe();
-	          renderLibrary();
-	          await refreshLibrary({ reason: "startup", toastOnChange: false });
-	          setStatus("Account created");
-			        } catch (err) {
-			          console.error(err);
-			          setStatus("Sign up failed");
-			          const msg = (err && err.message) || String(err);
-		            setError(
-	                msg === "email_taken"
-	                  ? "Email already has an account."
-	                  : msg === "email_send_failed"
-	                    ? "Email verification failed to send. Ask the admin to configure SMTP."
-	                  : msg === "missing_public_base"
-	                    ? "Server misconfigured (missing public base URL). Ask the admin."
-	                  : msg === "rate_limited"
-	                    ? "Too many attempts. Try again later."
-	                  : msg === "bad_email"
-	                    ? "Invalid email."
-	                    : msg === "signup_disabled"
-	                      ? "Sign up is disabled. Ask the admin."
-                      : msg === "bad_request"
-                        ? "Use a password with 8+ characters."
-                        : msg
-              );
-		        }
-		      }
-
-	      function signOut() {
-          stopHeartbeat();
-          closeChat();
-          closeUsernameGate();
-	        persistAuthTokenForBase(state.serverBase || window.location.origin, "");
-	        state.contentToken = "";
-	        state.serverToken = "";
-	        el.serverTokenInput.value = "";
-        try {
-          localStorage.removeItem("camfordick_server_token");
-        } catch {
-          // Ignore.
+        const username = String(el.authUserInput.value || "").trim();
+        const password = String(el.authPassInput.value || "");
+        if (!username || !password) {
+          setError("Enter username + password.");
+          return;
         }
+
+        setStatus("Signing in…");
         try {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("contentToken");
-          window.history.replaceState(null, "", url.toString());
-        } catch {
-          // Ignore.
+          const j = await apiJson("/api/auth/login", { method: "POST", body: { username, password } });
+          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          el.authPassInput.value = "";
+          try {
+            localStorage.setItem("camfordick_last_username", username);
+          } catch {
+            // Ignore.
+          }
+          await refreshMe();
+          renderLibrary();
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          setStatus("Signed in");
+        } catch (err) {
+          console.error(err);
+          setStatus("Sign in failed");
+          setError((err && err.message) || String(err));
         }
+      }
+
+      async function signUp() {
+        setError("");
+        const ok = await ensureConnectedServer();
+        if (!ok) return;
+
+        const username = String(el.authUserInput.value || "").trim();
+        const password = String(el.authPassInput.value || "");
+        if (!username || !password) {
+          setError("Enter username + password.");
+          return;
+        }
+
+        setStatus("Creating account…");
+        try {
+          const j = await apiJson("/api/auth/signup", { method: "POST", body: { username, password } });
+          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
+          el.authPassInput.value = "";
+          try {
+            localStorage.setItem("camfordick_last_username", username);
+          } catch {
+            // Ignore.
+          }
+          await refreshMe();
+          renderLibrary();
+          await refreshLibrary({ reason: "startup", toastOnChange: false });
+          setStatus("Account created");
+        } catch (err) {
+          console.error(err);
+          setStatus("Sign up failed");
+          setError((err && err.message) || String(err));
+        }
+      }
+
+      function signOut() {
+        persistAuthTokenForBase(state.serverBase || window.location.origin, "");
         state.me = null;
         setAuthUi();
         resetLibraryState();
@@ -1866,343 +1239,6 @@
         } catch (err) {
           console.error(err);
           setAdminMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      async function adminRefreshSessions() {
-        if (!state.me || String(state.me.role) !== "admin") return;
-        if (!el.adminSessionsList) return;
-        setAdminSessionsMsg("Loading sessions…");
-        try {
-          const j = await apiJson("/api/admin/sessions");
-          const sessions = Array.isArray(j.sessions) ? j.sessions : [];
-          renderAdminSessionsList(sessions);
-          const onlineCount = sessions.filter((s) => !!s.online).length;
-          setAdminSessionsMsg(`${onlineCount} online (${sessions.length} session${sessions.length === 1 ? "" : "s"})`);
-        } catch (err) {
-          console.error(err);
-          setAdminSessionsMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      function renderAdminSessionsList(sessions) {
-        if (!el.adminSessionsList) return;
-        el.adminSessionsList.innerHTML = "";
-        if (!Array.isArray(sessions) || sessions.length === 0) {
-          el.adminSessionsList.textContent = "No sessions yet.";
-          return;
-        }
-        for (const s of sessions) {
-          const row = document.createElement("div");
-          row.className = "flex items-start justify-between gap-2 border-b border-white/5 py-1 last:border-0";
-
-          const left = document.createElement("div");
-          left.className = "min-w-0 flex-1";
-          const who = s.email ? `${s.username} <${s.email}>` : String(s.username || "");
-          const online = s.online ? "ONLINE" : "offline";
-          const device = s.deviceName ? ` | ${s.deviceName}` : s.deviceId ? ` | ${s.deviceId}` : "";
-          const ip = s.ip ? ` | ${s.ip}` : "";
-          const last = s.lastSeenAt ? ` | seen ${new Date(s.lastSeenAt).toLocaleString()}` : "";
-          left.textContent = `${online} | ${who}${device}${ip}${last}`;
-
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = "Revoke";
-          btn.className = "rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-[11px] font-semibold text-white/90 hover:bg-black/40";
-          btn.addEventListener("click", () => adminRevokeSession(String(s.id || "")));
-
-          row.appendChild(left);
-          row.appendChild(btn);
-          el.adminSessionsList.appendChild(row);
-        }
-      }
-
-      async function adminRevokeSession(sessionId) {
-        const sid = String(sessionId || "").trim();
-        if (!sid) return;
-        setAdminSessionsMsg("Revoking…");
-        try {
-          await apiJson("/api/admin/revoke-session", { method: "POST", body: { sessionId: sid } });
-          setAdminSessionsMsg("Revoked.");
-          await adminRefreshSessions();
-        } catch (err) {
-          console.error(err);
-          setAdminSessionsMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      async function adminChatRefreshThreads() {
-        if (!state.me || String(state.me.role) !== "admin") return;
-        if (!el.adminChatThreadSelect) return;
-        setAdminChatMsg("Loading threads…");
-        try {
-          const prev = String(el.adminChatThreadSelect.value || "");
-          const j = await apiJson("/api/admin/chat/threads");
-          const threads = Array.isArray(j.threads) ? j.threads : [];
-          el.adminChatThreadSelect.innerHTML = "";
-          if (threads.length === 0) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "No chats yet";
-            el.adminChatThreadSelect.appendChild(opt);
-          } else {
-            for (const t of threads) {
-              const opt = document.createElement("option");
-              opt.value = String(t.uid || "");
-              const who = t.email ? `${t.username} <${t.email}>` : String(t.username || "");
-              const when = t.lastTs ? new Date(t.lastTs).toLocaleString() : "";
-              const online = t.online ? "ONLINE - " : "";
-              opt.textContent = when ? `${online}${who} (${when})` : `${online}${who}`;
-              el.adminChatThreadSelect.appendChild(opt);
-            }
-          }
-          if (prev && [...el.adminChatThreadSelect.options].some((o) => o.value === prev)) {
-            el.adminChatThreadSelect.value = prev;
-          }
-          setAdminChatMsg(`Threads: ${threads.length}`);
-        } catch (err) {
-          console.error(err);
-          setAdminChatMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      async function adminChatOpenSelected() {
-        if (!state.me || String(state.me.role) !== "admin") return;
-        const uid = String(el.adminChatThreadSelect && el.adminChatThreadSelect.value ? el.adminChatThreadSelect.value : "").trim();
-        if (!uid) {
-          setAdminChatMsg("Pick a thread.");
-          return;
-        }
-        state.adminChatUid = uid;
-        state.adminChatSince = 0;
-        await adminChatLoadHistory(uid);
-        startAdminChatPolling();
-      }
-
-      function stopAdminChatPolling() {
-        if (state.adminChatTimer) {
-          clearInterval(state.adminChatTimer);
-          state.adminChatTimer = null;
-        }
-      }
-
-      function startAdminChatPolling() {
-        stopAdminChatPolling();
-        if (!state.adminChatUid) return;
-        state.adminChatTimer = setInterval(() => {
-          adminChatPollOnce().catch(() => {});
-        }, 2500);
-      }
-
-      async function adminChatLoadHistory(uid) {
-        if (!el.adminChatMessages) return;
-        setAdminChatMsg("Loading chat…");
-        try {
-          const j = await apiJson(`/api/admin/chat/history?uid=${encodeURIComponent(uid)}&limit=200`);
-          const msgs = Array.isArray(j.messages) ? j.messages : [];
-          renderAdminChatMessages(msgs);
-          state.adminChatSince = msgs.length ? Number(msgs[msgs.length - 1].ts || 0) : 0;
-          const who = j.user && j.user.email ? `${j.user.username} <${j.user.email}>` : j.user ? j.user.username : "";
-          setAdminChatMsg(who ? `Chat: ${who}` : "Chat loaded.");
-        } catch (err) {
-          console.error(err);
-          setAdminChatMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      async function adminChatPollOnce() {
-        if (!state.me || String(state.me.role) !== "admin") return;
-        const uid = String(state.adminChatUid || "").trim();
-        if (!uid) return;
-        if (!el.adminChatMessages) return;
-        try {
-          const since = Number(state.adminChatSince || 0);
-          const j = await apiJson(`/api/admin/chat/updates?uid=${encodeURIComponent(uid)}&since=${encodeURIComponent(String(since))}`);
-          const msgs = Array.isArray(j.messages) ? j.messages : [];
-          if (!msgs.length) return;
-          appendAdminChatMessages(msgs);
-          const lastTs = msgs.length ? Number(msgs[msgs.length - 1].ts || 0) : 0;
-          if (lastTs) state.adminChatSince = Math.max(Number(state.adminChatSince || 0), lastTs);
-        } catch {
-          // Ignore transient failures.
-        }
-      }
-
-      function renderAdminChatMessages(messages) {
-        if (!el.adminChatMessages) return;
-        el.adminChatMessages.innerHTML = "";
-        appendAdminChatMessages(messages);
-      }
-
-      function appendAdminChatMessages(messages) {
-        if (!el.adminChatMessages) return;
-        const stickToBottom = el.adminChatMessages.scrollHeight - el.adminChatMessages.scrollTop - el.adminChatMessages.clientHeight < 40;
-        for (const m of Array.isArray(messages) ? messages : []) {
-          const wrap = document.createElement("div");
-          const fromRole = String(m && m.fromRole ? m.fromRole : "");
-          const mine = fromRole === "admin";
-          wrap.className = `flex ${mine ? "justify-end" : "justify-start"} py-1`;
-
-          const bubble = document.createElement("div");
-          bubble.className = mine
-            ? "max-w-[85%] rounded-xl border border-white/10 bg-neonT/10 px-3 py-2 text-zinc-100"
-            : "max-w-[85%] rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-zinc-100";
-
-          const meta = document.createElement("div");
-          meta.className = "mb-1 text-[10px] text-zinc-400";
-          const name = fromRole === "admin" ? "admin" : String(m && m.fromUsername ? m.fromUsername : "user");
-          const when = m && typeof m.ts === "number" ? new Date(m.ts).toLocaleTimeString() : "";
-          meta.textContent = when ? `${name} • ${when}` : name;
-
-          const text = document.createElement("div");
-          text.className = "whitespace-pre-wrap break-words";
-          text.textContent = String(m && m.text ? m.text : "");
-
-          bubble.appendChild(meta);
-          bubble.appendChild(text);
-          wrap.appendChild(bubble);
-          el.adminChatMessages.appendChild(wrap);
-        }
-        if (stickToBottom) el.adminChatMessages.scrollTop = el.adminChatMessages.scrollHeight;
-      }
-
-      async function adminChatSend() {
-        if (!state.me || String(state.me.role) !== "admin") return;
-        const uid = String(state.adminChatUid || "").trim();
-        if (!uid) {
-          setAdminChatMsg("Open a thread first.");
-          return;
-        }
-        const text = String(el.adminChatInput && el.adminChatInput.value ? el.adminChatInput.value : "").trim();
-        if (!text) return;
-        setAdminChatMsg("Sending…");
-        try {
-          await apiJson("/api/admin/chat/send", { method: "POST", body: { uid, text } });
-          if (el.adminChatInput) el.adminChatInput.value = "";
-          setAdminChatMsg("Sent.");
-          await adminChatPollOnce();
-          adminChatRefreshThreads().catch(() => {});
-        } catch (err) {
-          console.error(err);
-          setAdminChatMsg(`Failed: ${(err && err.message) || String(err)}`);
-        }
-      }
-
-      function openChat() {
-        if (!state.me || String(state.me.role || "") !== "user") {
-          toast("Sign in required.");
-          return;
-        }
-        state.chatOpen = true;
-        if (el.chatPanel) el.chatPanel.classList.remove("hidden");
-        if (el.chatHint) el.chatHint.textContent = "Messages are visible to admins only.";
-        chatLoadHistory().catch(() => {});
-        startChatPolling();
-      }
-
-      function closeChat() {
-        state.chatOpen = false;
-        if (state.chatTimer) {
-          clearInterval(state.chatTimer);
-          state.chatTimer = null;
-        }
-        stopAdminChatPolling();
-        if (el.chatPanel) el.chatPanel.classList.add("hidden");
-        if (el.chatMessages) el.chatMessages.innerHTML = "";
-        if (el.chatHint) el.chatHint.textContent = "";
-        state.chatSince = 0;
-      }
-
-      function startChatPolling() {
-        if (state.chatTimer) return;
-        state.chatTimer = setInterval(() => {
-          chatPollOnce().catch(() => {});
-        }, 2500);
-      }
-
-      async function chatLoadHistory() {
-        if (!state.chatOpen) return;
-        if (!el.chatMessages) return;
-        try {
-          const j = await apiJson("/api/chat/history?limit=120");
-          const msgs = Array.isArray(j.messages) ? j.messages : [];
-          renderUserChatMessages(msgs);
-          state.chatSince = msgs.length ? Number(msgs[msgs.length - 1].ts || 0) : 0;
-        } catch (err) {
-          console.error(err);
-          if (el.chatHint) el.chatHint.textContent = `Chat error: ${(err && err.message) || String(err)}`;
-        }
-      }
-
-      async function chatPollOnce() {
-        if (!state.chatOpen) return;
-        if (!state.me || String(state.me.role || "") !== "user") return;
-        if (!el.chatMessages) return;
-        try {
-          const since = Number(state.chatSince || 0);
-          const j = await apiJson(`/api/chat/updates?since=${encodeURIComponent(String(since))}`);
-          const msgs = Array.isArray(j.messages) ? j.messages : [];
-          if (!msgs.length) return;
-          appendUserChatMessages(msgs);
-          const lastTs = msgs.length ? Number(msgs[msgs.length - 1].ts || 0) : 0;
-          if (lastTs) state.chatSince = Math.max(Number(state.chatSince || 0), lastTs);
-        } catch {
-          // Ignore transient failures.
-        }
-      }
-
-      function renderUserChatMessages(messages) {
-        if (!el.chatMessages) return;
-        el.chatMessages.innerHTML = "";
-        appendUserChatMessages(messages);
-      }
-
-      function appendUserChatMessages(messages) {
-        if (!el.chatMessages) return;
-        const stickToBottom = el.chatMessages.scrollHeight - el.chatMessages.scrollTop - el.chatMessages.clientHeight < 40;
-        for (const m of Array.isArray(messages) ? messages : []) {
-          const wrap = document.createElement("div");
-          const fromRole = String(m && m.fromRole ? m.fromRole : "");
-          const mine = fromRole !== "admin";
-          wrap.className = `flex ${mine ? "justify-end" : "justify-start"} py-1`;
-
-          const bubble = document.createElement("div");
-          bubble.className = mine
-            ? "max-w-[85%] rounded-xl border border-white/10 bg-neonP/10 px-3 py-2 text-zinc-100"
-            : "max-w-[85%] rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-zinc-100";
-
-          const meta = document.createElement("div");
-          meta.className = "mb-1 text-[10px] text-zinc-400";
-          const name = fromRole === "admin" ? "admin" : "you";
-          const when = m && typeof m.ts === "number" ? new Date(m.ts).toLocaleTimeString() : "";
-          meta.textContent = when ? `${name} • ${when}` : name;
-
-          const text = document.createElement("div");
-          text.className = "whitespace-pre-wrap break-words";
-          text.textContent = String(m && m.text ? m.text : "");
-
-          bubble.appendChild(meta);
-          bubble.appendChild(text);
-          wrap.appendChild(bubble);
-          el.chatMessages.appendChild(wrap);
-        }
-        if (stickToBottom) el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
-      }
-
-      async function chatSend() {
-        if (!state.me || String(state.me.role || "") !== "user") return;
-        const text = String(el.chatInput && el.chatInput.value ? el.chatInput.value : "").trim();
-        if (!text) return;
-        if (el.chatHint) el.chatHint.textContent = "";
-        try {
-          await apiJson("/api/chat/send", { method: "POST", body: { text } });
-          if (el.chatInput) el.chatInput.value = "";
-          await chatPollOnce();
-          adminChatRefreshThreads().catch(() => {}); // keep admin thread list fresh on this device if admin is signed in elsewhere
-        } catch (err) {
-          console.error(err);
-          const msg = (err && err.message) || String(err);
-          if (el.chatHint) el.chatHint.textContent = msg === "rate_limited" ? "Too many messages. Try again in a minute." : `Send failed: ${msg}`;
         }
       }
 
@@ -2371,63 +1407,44 @@
         return j;
       }
 
-	      async function refreshMe() {
-	        if (state.mode !== "server") {
-	          state.me = null;
-            stopHeartbeat();
-            closeChat();
-	          setAuthUi();
-	          return false;
-	        }
-	        try {
-	          const r = await fetch(buildServerUrl("/api/me"), { cache: "no-store" });
-	          if (r.status === 401) {
-	            state.me = null;
-	            if (state.authToken) persistAuthTokenForBase(state.serverBase || window.location.origin, "");
-              stopHeartbeat();
-              closeChat();
-	            setAuthUi();
-	            return false;
-	          }
+      async function refreshMe() {
+        if (state.mode !== "server") {
+          state.me = null;
+          setAuthUi();
+          return false;
+        }
+        try {
+          const r = await fetch(buildServerUrl("/api/me"), { cache: "no-store" });
+          if (r.status === 401) {
+            state.me = null;
+            if (state.authToken) persistAuthTokenForBase(state.serverBase || window.location.origin, "");
+            setAuthUi();
+            return false;
+          }
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const j = await r.json();
-	          if (!j || !j.ok || !j.user) throw new Error("Bad server response");
-	          if (state.adminRoute && String(j.user.role || "") === "admin") state.cornerOpen = true;
-		          state.me = {
-		            username: String(j.user.username || ""),
-	              email: String(j.user.email || ""),
-		            role: String(j.user.role || ""),
-		            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
-		            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-		            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
-                emailVerified: j.user.emailVerified === false ? false : true,
-                needsUsername: !!j.user.needsUsername,
-		          };
-	          setAuthUi();
-            if (String(state.me.role || "") === "user" && state.me.needsUsername) {
-              openUsernameGate(state.postVerifySetup ? "Email verified. Choose a username to continue." : "");
-            } else {
-              closeUsernameGate();
-            }
-            state.postVerifySetup = false;
-		          if (String(state.me.role) === "admin") {
-		            refreshAdminUsers().catch(() => {});
-		            refreshContentTokens().catch(() => {});
-		            populateVideoSelection().catch(() => {});
-	              adminRefreshSessions().catch(() => {});
-              adminChatRefreshThreads().catch(() => {});
-	          }
-            startHeartbeat();
-	          return true;
-		        } catch {
-		          state.me = null;
-              closeUsernameGate();
-	            stopHeartbeat();
-	            closeChat();
-		          setAuthUi();
-		          return false;
-		        }
-		      }
+          if (!j || !j.ok || !j.user) throw new Error("Bad server response");
+          state.me = {
+            username: String(j.user.username || ""),
+            role: String(j.user.role || ""),
+            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
+          };
+          setAuthUi();
+          if (String(state.me.role) === "admin") {
+            refreshAdminUsers().catch(() => {});
+            refreshContentTokens().catch(() => {});
+            populateVideoSelection().catch(() => {});
+            refreshBundleStats().catch(() => {});
+          }
+          return true;
+        } catch {
+          state.me = null;
+          setAuthUi();
+          return false;
+        }
+      }
 
       // Content Access Token Functions
       async function refreshContentTokens() {
@@ -2462,6 +1479,7 @@
               <div class="text-xs text-zinc-400">
                 Max uses: ${token.currentUses}/${token.maxUses} | 
                 Valid until: ${token.validUntil ? new Date(token.validUntil).toLocaleDateString() : 'Never expires'} |
+                ${token.bundleType ? `Bundle: ${token.bundleType}` : 'Custom videos'} |
                 Created: ${new Date(token.createdAt).toLocaleDateString()}
               </div>
             `;
@@ -2471,25 +1489,14 @@
             
             // Copy token button
             const copyBtn = document.createElement("button");
-	            copyBtn.className = "neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-1 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform";
-	            copyBtn.textContent = "Copy";
-	            copyBtn.onclick = () => {
-	              try {
-	                const u = new URL(window.location.href);
-	                u.searchParams.delete("auth");
-	                u.searchParams.delete("token");
-	                u.searchParams.delete("server");
-	                u.searchParams.delete("contentToken");
-	                if (state.serverBase && state.serverBase !== window.location.origin) {
-	                  u.searchParams.set("server", state.serverBase);
-	                }
-	                u.searchParams.set("contentToken", token.token);
-	                navigator.clipboard.writeText(u.toString()).then(() => toast("Token link copied to clipboard!"));
-	              } catch {
-	                const tokenUrl = `${window.location.origin}?contentToken=${encodeURIComponent(token.token)}`;
-	                navigator.clipboard.writeText(tokenUrl).then(() => toast("Token link copied to clipboard!"));
-	              }
-	            };
+            copyBtn.className = "neon-btn rounded-xl border border-white/10 bg-black/30 px-3 py-1 font-display text-xs font-semibold tracking-wide text-white/90 transition will-change-transform";
+            copyBtn.textContent = "Copy";
+            copyBtn.onclick = () => {
+              const tokenUrl = `${window.location.origin}?server=${encodeURIComponent(state.serverBase)}&contentToken=${encodeURIComponent(token.token)}`;
+              navigator.clipboard.writeText(tokenUrl).then(() => {
+                toast("Token link copied to clipboard!");
+              });
+            };
             
             // Delete token button
             const deleteBtn = document.createElement("button");
@@ -2511,12 +1518,53 @@
         }
       }
 
+      async function refreshBundleStats() {
+        if (!state.me || String(state.me.role) !== "admin") {
+          return;
+        }
+        
+        try {
+          const j = await apiJson("/api/bundles");
+          state.bundleStats = j.bundles || {};
+          
+          // Update the UI
+          updateBundleStatsDisplay();
+        } catch (err) {
+          console.error("Failed to load bundle stats:", err);
+          el.bundle10min.textContent = "Error";
+          el.bundle15min.textContent = "Error";
+          el.bundle30min.textContent = "Error";
+          el.bundle45min.textContent = "Error";
+          el.bundle1hour.textContent = "Error";
+        }
+      }
+
+      function updateBundleStatsDisplay() {
+        const updateBundleDisplay = (bundleId, element) => {
+          const bundle = state.bundleStats[bundleId];
+          if (bundle && !bundle.error) {
+            element.textContent = `${bundle.videoCount} videos\n(${Math.round(bundle.totalDuration / 60)} min)`;
+          } else if (bundle && bundle.error) {
+            element.textContent = "Error";
+          } else {
+            element.textContent = "Loading...";
+          }
+        };
+        
+        updateBundleDisplay('10min', el.bundle10min);
+        updateBundleDisplay('15min', el.bundle15min);
+        updateBundleDisplay('30min', el.bundle30min);
+        updateBundleDisplay('45min', el.bundle45min);
+        updateBundleDisplay('1hour', el.bundle1hour);
+      }
+
       async function createContentToken() {
         if (!state.me || String(state.me.role) !== "admin") return;
         
         const name = el.tokenNameInput.value.trim();
         const maxUses = parseInt(el.tokenMaxUsesInput.value);
         const validUntil = el.tokenValidUntilInput.value;
+        const bundleType = el.tokenBundleSelect.value;
         
         if (!name || isNaN(maxUses) || maxUses <= 0) {
           toast("Please enter a token name and valid max uses (> 0)");
@@ -2535,7 +1583,8 @@
             name,
             maxUses,
             validUntil: validUntil || null,
-            allowedVideos: selectedVideos.length > 0 ? selectedVideos : null
+            allowedVideos: selectedVideos.length > 0 ? selectedVideos : null,
+            bundleType: bundleType || null
           };
           
           const j = await apiJson("/api/content-tokens", { method: "POST", body });
@@ -2545,6 +1594,7 @@
           el.tokenNameInput.value = "";
           el.tokenMaxUsesInput.value = "";
           el.tokenValidUntilInput.value = "";
+          el.tokenBundleSelect.value = "";
           
           // Deselect all videos
           const allCheckboxes = el.videoSelectionContainer.querySelectorAll('input[type="checkbox"]');
@@ -2637,7 +1687,6 @@
         const base = state.serverBase || window.location.origin;
         const u = new URL(pathname, base);
         if (state.serverToken) u.searchParams.set("token", state.serverToken);
-        if (state.contentToken) u.searchParams.set("contentToken", state.contentToken);
         if (state.authToken) u.searchParams.set("auth", state.authToken);
         return u.toString();
       }
@@ -2654,86 +1703,13 @@
         return buildServerUrl(`/thumb/${encodePathForUrl(relPath)}`);
       }
 
-	      function serverPreviewUrl(relPath) {
-	        return buildServerUrl(`/preview/${encodePathForUrl(relPath)}`);
-	      }
+      function serverPreviewUrl(relPath) {
+        return buildServerUrl(`/preview/${encodePathForUrl(relPath)}`);
+      }
 
-        function formatDurationSec(sec) {
-          const s = Number(sec);
-          if (!Number.isFinite(s) || s <= 0) return "--:--";
-          const total = Math.round(s);
-          const h = Math.floor(total / 3600);
-          const m = Math.floor((total % 3600) / 60);
-          const ss = total % 60;
-          if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
-          return `${m}:${String(ss).padStart(2, "0")}`;
-        }
-
-        function setDurationTextForPath(relPath) {
-          const cached = state.durationByPath.has(relPath) ? state.durationByPath.get(relPath) : undefined;
-          const label =
-            cached === undefined
-              ? "Length: …"
-              : cached === null
-                ? "Length: --:--"
-                : `Length: ${formatDurationSec(cached)}`;
-          try {
-            const nodes = document.querySelectorAll("[data-duration-path]");
-            for (const n of nodes) {
-              if (!n || !n.dataset) continue;
-              if (String(n.dataset.durationPath || "") !== relPath) continue;
-              n.textContent = label;
-            }
-          } catch {
-            // Ignore.
-          }
-        }
-
-        function queueDurationFetch(relPath) {
-          const p = String(relPath || "");
-          if (!p) return;
-          if (state.mode !== "server") return;
-          if (state.durationByPath.has(p)) {
-            setDurationTextForPath(p);
-            return;
-          }
-          if (state.durationQueued.has(p)) return;
-          state.durationQueued.add(p);
-          state.durationQueue.push(p);
-          drainDurationQueue();
-        }
-
-        async function fetchDurationOnce(relPath) {
-          try {
-            const j = await apiJson(`/api/video-meta?path=${encodeURIComponent(relPath)}`);
-            const v = j && typeof j.durationSec === "number" && Number.isFinite(j.durationSec) ? j.durationSec : null;
-            state.durationByPath.set(relPath, v);
-          } catch {
-            state.durationByPath.set(relPath, null);
-          } finally {
-            state.durationQueued.delete(relPath);
-            setDurationTextForPath(relPath);
-          }
-        }
-
-        function drainDurationQueue() {
-          const MAX = 4;
-          while (state.durationInFlight < MAX && state.durationQueue.length) {
-            const relPath = state.durationQueue.shift();
-            if (!relPath) continue;
-            state.durationInFlight++;
-            fetchDurationOnce(relPath)
-              .catch(() => {})
-              .finally(() => {
-                state.durationInFlight--;
-                drainDurationQueue();
-              });
-          }
-        }
-
-	      async function detectServerInfoAt(base) {
-	        try {
-	          const u = new URL("/api/info", base);
+      async function detectServerInfoAt(base) {
+        try {
+          const u = new URL("/api/info", base);
           const r = await fetch(u.toString(), { cache: "no-store" });
           if (!r.ok) return null;
           const j = await r.json();
@@ -2750,20 +1726,16 @@
         if (!r.ok) throw new Error(`Server error (${r.status})`);
         const j = await r.json();
         if (!j || !j.ok || !Array.isArray(j.videos)) throw new Error("Bad server response");
-		        if (j.user) {
-		          state.me = {
-		            username: String(j.user.username || ""),
-	              email: String(j.user.email || ""),
-		            role: String(j.user.role || ""),
-		            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
-		            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
-		            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : [],
-                emailVerified: j.user.emailVerified === false ? false : true,
-                needsUsername: !!j.user.needsUsername,
-		          };
-		          setAuthUi();
-              if (String(state.me.role || "") === "user" && state.me.needsUsername) openUsernameGate("");
-		        }
+        if (j.user) {
+          state.me = {
+            username: String(j.user.username || ""),
+            role: String(j.user.role || ""),
+            quota: typeof j.user.quota === "number" ? j.user.quota : 0,
+            unlockedCount: typeof j.user.unlockedCount === "number" ? j.user.unlockedCount : 0,
+            contentTokens: Array.isArray(j.user.contentTokens) ? j.user.contentTokens : []
+          };
+          setAuthUi();
+        }
         /** @type {ServerVideoEntry[]} */
         const list = j.videos.map((v) => ({
           source: "server",
@@ -2883,21 +1855,16 @@
           return;
         }
 
-	        el.emptyState.classList.add("hidden");
-	        const needsLocalThumbs = state.videos.some((v) => v.source === "local" && THUMB_PREVIEW_EXTS.has(v.ext));
-	        if (needsLocalThumbs) ensureThumbObserver();
+        el.emptyState.classList.add("hidden");
+        const needsLocalThumbs = state.videos.some((v) => v.source === "local" && THUMB_PREVIEW_EXTS.has(v.ext));
+        if (needsLocalThumbs) ensureThumbObserver();
 
-          const role = state.me ? String(state.me.role || "") : "";
-          const isAdmin = role === "admin";
-          state.naughtyTitleByPath = new Map();
-
-	        for (let i = 0; i < state.videos.length; i++) {
-            const v = state.videos[i];
-	          const btn = document.createElement("button");
-	          btn.type = "button";
-	          btn.dataset.path = v.path;
-	          btn.className =
-	            "group relative overflow-hidden rounded-2xl border border-white/10 bg-black/25 text-left transition hover:border-white/20 hover:bg-black/35";
+        for (const v of state.videos) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.dataset.path = v.path;
+          btn.className =
+            "group relative overflow-hidden rounded-2xl border border-white/10 bg-black/25 text-left transition hover:border-white/20 hover:bg-black/35";
           if (v.path === state.currentPath) {
             btn.classList.add("ring-2", "ring-neonT/70");
           }
@@ -2968,52 +1935,25 @@
               </svg>
             </div>
           `;
-	          preview.appendChild(playBadge);
+          preview.appendChild(playBadge);
 
-		          const label = document.createElement("div");
-		          label.className = "px-4 py-3";
+          const label = document.createElement("div");
+          label.className = "px-3 py-2";
 
-              const titleEl = document.createElement("div");
-              titleEl.className = "truncate font-display text-sm font-semibold tracking-wide text-zinc-100";
-              const hideNames = v.source === "server" && !isAdmin;
-              const naughtyTitle = `Naughty Stuff ${String(i + 1).padStart(3, "0")}`;
-              if (hideNames) state.naughtyTitleByPath.set(v.path, naughtyTitle);
-              titleEl.textContent = hideNames ? naughtyTitle : v.name || v.path;
-              titleEl.title = titleEl.textContent;
+          const pathEl = document.createElement("div");
+          pathEl.className = "truncate font-mono text-[11px] leading-tight text-zinc-200/90";
+          pathEl.textContent = v.path;
+          pathEl.title = v.path;
 
-		          const pathEl = document.createElement("div");
-		          pathEl.className = "mt-0.5 truncate font-mono text-[11px] leading-tight text-zinc-400/90";
-		          pathEl.textContent = v.path;
-		          pathEl.title = v.path;
-              pathEl.classList.toggle("hidden", v.source === "server" && !isAdmin);
+          const metaEl = document.createElement("div");
+          metaEl.className = "mt-1 flex items-center gap-2 text-[10px] text-zinc-400";
+          const extSpan = document.createElement("span");
+          extSpan.className = "rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono";
+          extSpan.textContent = v.ext;
+          metaEl.appendChild(extSpan);
 
-              const durationEl = document.createElement("div");
-              durationEl.className = "mt-0.5 truncate font-mono text-[11px] leading-tight text-zinc-400/90";
-              durationEl.dataset.durationPath = v.path;
-              if (v.source === "server") {
-                const cached = state.durationByPath.has(v.path) ? state.durationByPath.get(v.path) : undefined;
-                durationEl.textContent =
-                  cached === undefined
-                    ? "Length: …"
-                    : cached === null
-                      ? "Length: --:--"
-                      : `Length: ${formatDurationSec(cached)}`;
-                queueDurationFetch(v.path);
-              } else {
-                durationEl.textContent = "Length: --:--";
-              }
-
-		          const metaEl = document.createElement("div");
-		          metaEl.className = "mt-2 flex items-center gap-2 text-[11px] text-zinc-400";
-		          const extSpan = document.createElement("span");
-		          extSpan.className = "rounded-full border border-white/10 bg-black/30 px-2 py-0.5 font-mono";
-	          extSpan.textContent = v.ext;
-	          metaEl.appendChild(extSpan);
-
-	          label.appendChild(titleEl);
-	          label.appendChild(pathEl);
-              label.appendChild(durationEl);
-		          label.appendChild(metaEl);
+          label.appendChild(pathEl);
+          label.appendChild(metaEl);
 
           btn.appendChild(preview);
           btn.appendChild(label);
@@ -3029,37 +1969,36 @@
         if (!entry) return;
         state.currentPath = path;
         state.currentIsPreview = false;
-        const role = state.me ? String(state.me.role || "") : "";
-        const isAdmin = role === "admin";
-        const hideNames = entry.source === "server" && !isAdmin;
-        el.nowPlaying.textContent = hideNames ? state.naughtyTitleByPath.get(path) || "Naughty Stuff" : path;
+        el.nowPlaying.textContent = path;
         setPlayerActions(entry);
-        setViewUi();
 
-	        try {
-	          let url;
-	          if (entry.source === "server") {
-	            const role = state.me ? String(state.me.role || "") : "";
-	            const isAdmin = role === "admin";
-	            const unlocked = !!entry.unlocked || isAdmin;
-	            if (unlocked) {
-	              url = serverMediaUrl(entry.path);
-	              state.currentIsPreview = false;
-	            } else {
-	              url = serverPreviewUrl(entry.path);
-	              state.currentIsPreview = true;
-	            }
-	          } else {
-	            url = await getLocalObjectUrl(entry);
-	          }
+        try {
+          let url;
+          if (entry.source === "server") {
+            if (entry.unlocked) {
+              url = serverMediaUrl(entry.path);
+            } else {
+              // Check if we have a valid content token that allows access to this video
+              const hasValidToken = state.me && state.me.contentTokens && 
+                state.me.contentTokens.some(token => {
+                  // Check if token is valid and allows this video
+                  return token.currentUses < token.maxUses && 
+                         (!token.allowedVideos || token.allowedVideos.includes(entry.path));
+                });
+              
+              if (!hasValidToken) {
+                setError("Access denied. Video is locked.");
+                return;
+              }
+              
+              url = serverMediaUrl(entry.path);
+            }
+          } else {
+            url = await getLocalObjectUrl(entry);
+          }
           el.player.src = url;
           el.player.load();
           if (state.streamOn) await el.player.play();
-          try {
-            el.playerSection.scrollIntoView({ behavior: "smooth", block: "start" });
-          } catch {
-            // Ignore.
-          }
         } catch (err) {
           console.error(err);
           setError((err && err.message) || String(err));
@@ -3110,31 +2049,7 @@
             if (err.status === 401) {
               setError("Sign in required");
               state.me = null;
-              const hadAuth = !!state.authToken;
-              const hadLegacy = !!state.serverToken;
-              const hadContent = !!state.contentToken;
-
               if (state.authToken) persistAuthTokenForBase(state.serverBase || window.location.origin, "");
-              if (state.serverToken) {
-                state.serverToken = "";
-                el.serverTokenInput.value = "";
-                try {
-                  localStorage.removeItem("camfordick_server_token");
-                } catch {
-                  // Ignore.
-                }
-              }
-              // If content token is the only possible auth and it failed, clear it.
-              if (hadContent && !hadAuth && !hadLegacy) {
-                state.contentToken = "";
-                try {
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete("contentToken");
-                  window.history.replaceState(null, "", url.toString());
-                } catch {
-                  // Ignore.
-                }
-              }
               setAuthUi();
             } else {
               setError((err && err.message) || String(err));
@@ -3148,42 +2063,6 @@
 
       // Initial setup
       (async () => {
-        // Magic link redirect: apply token from hash and clear hash
-	        const hash = window.location.hash.slice(1);
-	        if (hash) {
-	          const authMatch = /^auth=([^&]+)/.exec(hash);
-	          const errorMatch = /error=([^&]*)/.exec(hash);
-            const setupMatch = /setup=([^&]*)/.exec(hash);
-	          if (authMatch) {
-	            const token = decodeURIComponent(authMatch[1]);
-	            const base = window.location.origin;
-	            state.authToken = token;
-	            persistAuthTokenForBase(base, token);
-	          }
-            if (setupMatch) {
-              const v = decodeURIComponent(setupMatch[1] || "");
-              state.postVerifySetup = v !== "0";
-            }
-	          if (errorMatch) {
-	            const err = decodeURIComponent(errorMatch[1]);
-	            setError(err === "invalid_or_expired_link" ? "Link expired or already used." : err === "account_disabled" ? "Account disabled." : err === "access_expired" ? "Access expired." : err);
-	          }
-          try {
-            window.history.replaceState(null, "", window.location.pathname + window.location.search);
-          } catch {
-            // Ignore.
-          }
-        }
-
-        try {
-          const p = String(window.location.pathname || "");
-          state.adminRoute = p === "/admin" || p.startsWith("/admin/");
-        } catch {
-          state.adminRoute = false;
-        }
-
-        state.ageOk = readAgeOk();
-        setAgeGateUi();
         setSupportPill();
         setServerFormUi();
         setAuthUi();
@@ -3191,40 +2070,6 @@
         renderLibrary();
 
         // Event listeners
-        el.ageYesBtn.addEventListener("click", () => {
-          state.ageOk = true;
-          writeAgeOk(true);
-          el.ageGateMsg.textContent = "";
-          setAuthUi();
-        });
-	        el.ageNoBtn.addEventListener("click", () => {
-	          state.ageOk = false;
-	          writeAgeOk(false);
-	          el.ageGateMsg.textContent = "Access denied. You must be 18+ to continue.";
-	          setAuthUi();
-	        });
-          if (el.usernameGateSaveBtn) el.usernameGateSaveBtn.addEventListener("click", saveUsernameFromGate);
-          if (el.usernameGateSignOutBtn) el.usernameGateSignOutBtn.addEventListener("click", signOut);
-          if (el.usernameGateInput) {
-            el.usernameGateInput.addEventListener("keydown", (e) => {
-              if (e.key === "Enter") saveUsernameFromGate();
-            });
-          }
-	        el.cornerAdminBtn.addEventListener("click", () => {
-	          const role = state.me ? String(state.me.role || "") : "";
-	          if (role !== "admin") {
-	            toast("Sign in as admin to open the admin panel.");
-	            try {
-              el.authUserInput.focus();
-            } catch {
-              // Ignore.
-            }
-            return;
-          }
-	          state.cornerOpen = !state.cornerOpen;
-	          setAuthUi();
-            if (!state.cornerOpen) stopAdminChatPolling();
-	        });
         el.selectFolderBtn.addEventListener("click", selectFolder);
         el.refreshBtn.addEventListener("click", () => refreshLibrary({ reason: "manual", toastOnChange: true }));
         el.streamToggleBtn.addEventListener("click", () => {
@@ -3267,36 +2112,14 @@
         });
         el.copyLinkBtn.addEventListener("click", copyShareLink);
         el.disconnectServerBtn.addEventListener("click", disconnectServer);
-	        el.signInBtn.addEventListener("click", signIn);
-	        el.signUpBtn.addEventListener("click", signUp);
-	        el.signOutBtn.addEventListener("click", signOut);
-          if (el.chatBtn) el.chatBtn.addEventListener("click", () => (state.chatOpen ? closeChat() : openChat()));
-          if (el.chatCloseBtn) el.chatCloseBtn.addEventListener("click", closeChat);
-          if (el.chatSendBtn) el.chatSendBtn.addEventListener("click", chatSend);
-          if (el.chatInput) {
-            el.chatInput.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                chatSend();
-              }
-            });
-          }
-	        el.adminSetQuotaBtn.addEventListener("click", adminSetQuota);
-	        el.adminRefreshUsersBtn.addEventListener("click", refreshAdminUsers);
-          if (el.adminRefreshSessionsBtn) el.adminRefreshSessionsBtn.addEventListener("click", adminRefreshSessions);
-          if (el.adminChatRefreshBtn) el.adminChatRefreshBtn.addEventListener("click", adminChatRefreshThreads);
-          if (el.adminChatOpenBtn) el.adminChatOpenBtn.addEventListener("click", adminChatOpenSelected);
-          if (el.adminChatSendBtn) el.adminChatSendBtn.addEventListener("click", adminChatSend);
-          if (el.adminChatInput) {
-            el.adminChatInput.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                adminChatSend();
-              }
-            });
-          }
-	        el.createTokenBtn.addEventListener("click", createContentToken);
-	        el.refreshTokensBtn.addEventListener("click", refreshContentTokens);
+        el.signInBtn.addEventListener("click", signIn);
+        el.signUpBtn.addEventListener("click", signUp);
+        el.signOutBtn.addEventListener("click", signOut);
+        el.adminSetQuotaBtn.addEventListener("click", adminSetQuota);
+        el.adminRefreshUsersBtn.addEventListener("click", refreshAdminUsers);
+        el.createTokenBtn.addEventListener("click", createContentToken);
+        el.refreshTokensBtn.addEventListener("click", refreshContentTokens);
+        el.refreshBundlesBtn.addEventListener("click", refreshBundleStats);
         el.playerPreviewBtn.addEventListener("click", playCurrentPreview);
         el.playerUnlockBtn.addEventListener("click", unlockCurrent);
         el.overlayStreamOnBtn.addEventListener("click", () => {
@@ -3313,57 +2136,31 @@
 
         // Auto-refresh library
         setInterval(() => {
-          if (state.mode === "server" && (state.me || state.serverToken || state.contentToken)) {
+          if (state.mode === "server" && state.me) {
             refreshLibrary({ reason: "auto", toastOnChange: false });
           }
         }, state.autoRescanMs);
 
-        // Try to restore server connection from URL params (or same-origin server).
+        // Try to restore server connection from URL params
         const u = new URL(window.location);
         const serverParam = u.searchParams.get("server");
         const tokenParam = u.searchParams.get("token");
-        const contentTokenParam = u.searchParams.get("contentToken");
-        if (contentTokenParam) state.contentToken = String(contentTokenParam || "").trim();
-
-        let attemptedServer = false;
         if (serverParam) {
-          attemptedServer = true;
+          // Don't await to avoid blocking UI
           connectServer(serverParam, tokenParam || "", { remember: false });
         } else {
-          // If index.html is served by `server.js`, auto-connect to this origin.
-          const originInfo = await detectServerInfoAt(window.location.origin);
-          if (originInfo) {
-            attemptedServer = true;
-            connectServer(window.location.origin, "", { remember: false, info: originInfo });
-          } else {
-            // Optional operator-configured default server base.
-            try {
-              const meta = document.querySelector('meta[name="camfordick:server"]');
-              const v = meta && meta.getAttribute("content") ? String(meta.getAttribute("content") || "").trim() : "";
-              if (v) {
-                attemptedServer = true;
-                connectServer(v, "", { remember: false });
-              }
-            } catch {
-              // Ignore.
-            }
-
-            // Try to restore last used server
-            try {
-              const base = localStorage.getItem("camfordick_server_base") || "";
-              const token = localStorage.getItem("camfordick_server_token") || "";
-              if (base) {
-                attemptedServer = true;
-                connectServer(base, token, { remember: false });
-              }
-            } catch {
-              // Ignore.
-            }
+          // Try to restore last used server
+          try {
+            const base = localStorage.getItem("camfordick_server_base") || "";
+            const token = localStorage.getItem("camfordick_server_token") || "";
+            if (base) connectServer(base, token, { remember: false });
+          } catch {
+            // Ignore.
           }
         }
 
-        // Local folder mode (optional). Skip if we already connected to a server.
-        if (!attemptedServer) tryRestoreFolderHandle();
+        // Try to restore folder handle
+        tryRestoreFolderHandle();
       })();
     </script>
   </body>
