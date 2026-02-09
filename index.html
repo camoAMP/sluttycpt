@@ -1551,24 +1551,28 @@
         return false;
       }
 
-	      async function signIn() {
-	        setError("");
-	        if (!ensureAgeOk()) return;
-	        const ok = await ensureConnectedServer();
-	        if (!ok) return;
+		      async function signIn() {
+		        setError("");
+		        if (!ensureAgeOk()) return;
+		        const ok = await ensureConnectedServer();
+		        if (!ok) return;
 
-	        const identifier = String(el.authUserInput.value || "").trim();
-	        const password = String(el.authPassInput.value || "");
-	        if (!identifier || !password) {
-	          setError(state.adminRoute ? "Enter username + password." : "Enter email + password.");
-	          return;
-	        }
+		        const identifier = String(el.authUserInput.value || "").trim();
+		        const password = String(el.authPassInput.value || "");
+		        if (!identifier || !password) {
+		          setError(state.adminRoute ? "Enter username + password." : "Enter email + password.");
+		          return;
+		        }
+            if (password.length < 8) {
+              setError("Password must be at least 8 characters.");
+              return;
+            }
 
-	        setStatus("Signing in…");
-	        try {
-            const deviceId = getOrCreateDeviceId();
-            const deviceName = getDeviceName();
-	          const j = await apiJson("/api/auth/login", { method: "POST", body: { identifier, password, deviceId, deviceName } });
+		        setStatus("Signing in…");
+		        try {
+	            const deviceId = getOrCreateDeviceId();
+	            const deviceName = getDeviceName();
+		          const j = await apiJson("/api/auth/login", { method: "POST", body: { identifier, password, deviceId, deviceName } });
 	          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
 	          el.authPassInput.value = "";
 	          try {
@@ -1580,36 +1584,50 @@
 	          renderLibrary();
 	          await refreshLibrary({ reason: "startup", toastOnChange: false });
 	          setStatus("Signed in");
-	        } catch (err) {
-	          console.error(err);
-	          setStatus("Sign in failed");
-	          const msg = (err && err.message) || String(err);
-	          setError(msg === "invalid_credentials" ? "Invalid email/username or password." : msg);
-	        }
-	      }
+		        } catch (err) {
+		          console.error(err);
+		          setStatus("Sign in failed");
+		          const msg = (err && err.message) || String(err);
+		          setError(
+                msg === "invalid_credentials"
+                  ? "Invalid email/username or password."
+                  : msg === "bad_request"
+                    ? "Check your email/username and use a password with 8+ characters."
+                    : msg === "account_disabled"
+                      ? "Account disabled."
+                      : msg === "access_expired"
+                        ? "Access expired."
+                        : msg
+              );
+		        }
+		      }
 
-	      async function signUp() {
-	        setError("");
-	        if (!ensureAgeOk()) return;
-	        const ok = await ensureConnectedServer();
-	        if (!ok) return;
+		      async function signUp() {
+		        setError("");
+		        if (!ensureAgeOk()) return;
+		        const ok = await ensureConnectedServer();
+		        if (!ok) return;
 
-	        const email = String(el.authUserInput.value || "").trim();
-	        const password = String(el.authPassInput.value || "");
-	        if (!email || !password) {
-	          setError("Enter email + password.");
-	          return;
-	        }
-          if (!looksLikeEmail(email)) {
-            setError("Enter a valid email address.");
-	          return;
-	        }
+		        const email = String(el.authUserInput.value || "").trim();
+		        const password = String(el.authPassInput.value || "");
+		        if (!email || !password) {
+		          setError("Enter email + password.");
+		          return;
+		        }
+	          if (!looksLikeEmail(email)) {
+	            setError("Enter a valid email address.");
+		          return;
+		        }
+            if (password.length < 8) {
+              setError("Password must be at least 8 characters.");
+              return;
+            }
 
-	        setStatus("Creating account…");
-	        try {
-            const deviceId = getOrCreateDeviceId();
-            const deviceName = getDeviceName();
-	          const j = await apiJson("/api/auth/signup", { method: "POST", body: { email, password, deviceId, deviceName } });
+		        setStatus("Creating account…");
+		        try {
+	            const deviceId = getOrCreateDeviceId();
+	            const deviceName = getDeviceName();
+		          const j = await apiJson("/api/auth/signup", { method: "POST", body: { email, password, deviceId, deviceName } });
 	          persistAuthTokenForBase(state.serverBase || window.location.origin, j.auth || "");
 	          el.authPassInput.value = "";
 	          try {
@@ -1621,13 +1639,23 @@
 	          renderLibrary();
 	          await refreshLibrary({ reason: "startup", toastOnChange: false });
 	          setStatus("Account created");
-	        } catch (err) {
-	          console.error(err);
-	          setStatus("Sign up failed");
-	          const msg = (err && err.message) || String(err);
-            setError(msg === "email_taken" ? "Email already has an account." : msg === "bad_email" ? "Invalid email." : msg);
-	        }
-	      }
+		        } catch (err) {
+		          console.error(err);
+		          setStatus("Sign up failed");
+		          const msg = (err && err.message) || String(err);
+	            setError(
+                msg === "email_taken"
+                  ? "Email already has an account."
+                  : msg === "bad_email"
+                    ? "Invalid email."
+                    : msg === "signup_disabled"
+                      ? "Sign up is disabled. Ask the admin."
+                      : msg === "bad_request"
+                        ? "Use a password with 8+ characters."
+                        : msg
+              );
+		        }
+		      }
 
 	      function signOut() {
           stopHeartbeat();
